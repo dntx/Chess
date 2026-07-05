@@ -25,6 +25,11 @@ function drawBoard() {
     return;
   }
 
+  if (gameType === "tictactoe") {
+    drawTicTacToeBoard();
+    return;
+  }
+
   for (let i = 1; i <= boardCols; i += 1) {
     const pos = i * cellSize;
     ctx.strokeStyle = "#8c5a26";
@@ -180,7 +185,7 @@ function getBoardPosition(event) {
   return { row, col };
 }
 
-function connect4Geometry() {
+function gridGeometry() {
   const cell = Math.min(canvas.width / boardCols, canvas.height / boardRows);
   const originX = (canvas.width - cell * boardCols) / 2;
   const originY = (canvas.height - cell * boardRows) / 2;
@@ -188,7 +193,7 @@ function connect4Geometry() {
 }
 
 function drawConnect4Board() {
-  const { cell, originX, originY } = connect4Geometry();
+  const { cell, originX, originY } = gridGeometry();
 
   ctx.fillStyle = "#e0a95e";
   ctx.fillRect(originX, originY, cell * boardCols, cell * boardRows);
@@ -221,16 +226,63 @@ function drawConnect4Board() {
   }
 }
 
-function getConnect4Column(event) {
+function drawTicTacToeBoard() {
+  const { cell, originX, originY } = gridGeometry();
+  const gridW = cell * boardCols;
+  const gridH = cell * boardRows;
+
+  ctx.fillStyle = "#f6e3bd";
+  ctx.fillRect(originX, originY, gridW, gridH);
+
+  ctx.strokeStyle = "#a9752f";
+  ctx.lineWidth = Math.max(3, cell * 0.045);
+  for (let i = 1; i < boardCols; i += 1) {
+    const x = originX + i * cell;
+    ctx.beginPath();
+    ctx.moveTo(x, originY);
+    ctx.lineTo(x, originY + gridH);
+    ctx.stroke();
+  }
+  for (let i = 1; i < boardRows; i += 1) {
+    const y = originY + i * cell;
+    ctx.beginPath();
+    ctx.moveTo(originX, y);
+    ctx.lineTo(originX + gridW, y);
+    ctx.stroke();
+  }
+
+  for (let r = 0; r < boardRows; r += 1) {
+    for (let c = 0; c < boardCols; c += 1) {
+      if (board[r][c] !== EMPTY) {
+        const x = originX + (c + 0.5) * cell;
+        const y = originY + (r + 0.5) * cell;
+        drawDisc(x, y, cell * 0.32, board[r][c]);
+      }
+    }
+  }
+
+  if (blinkOn) {
+    for (const stone of getLastTurnStones()) {
+      const x = originX + (stone.col + 0.5) * cell;
+      const y = originY + (stone.row + 0.5) * cell;
+      drawLastMoveRing(x, y, cell * 0.38);
+    }
+  }
+}
+
+function getGridCell(event) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
   const x = (event.clientX - rect.left) * scaleX;
-  const { cell, originX } = connect4Geometry();
+  const y = (event.clientY - rect.top) * scaleY;
+  const { cell, originX, originY } = gridGeometry();
   const col = Math.floor((x - originX) / cell);
-  if (col < 0 || col >= boardCols) {
-    return -1;
+  const row = Math.floor((y - originY) / cell);
+  if (row < 0 || row >= boardRows || col < 0 || col >= boardCols) {
+    return null;
   }
-  return col;
+  return { row, col };
 }
 
 function resizeBoard() {
@@ -241,6 +293,17 @@ function resizeBoard() {
     canvas.style.width = `${canvas.width}px`;
     canvas.style.aspectRatio = `${boardCols} / ${boardRows}`;
     cellSize = cell;
+    drawBoard();
+    return;
+  }
+
+  if (gameType === "tictactoe") {
+    const size = 420;
+    canvas.width = size;
+    canvas.height = size;
+    canvas.style.width = `${size}px`;
+    canvas.style.aspectRatio = "1 / 1";
+    cellSize = size / boardCols;
     drawBoard();
     return;
   }

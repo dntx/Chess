@@ -8,16 +8,20 @@ function handleHumanMove(event) {
   }
 
   let pos;
-  if (gameType === "connect4") {
-    const col = getConnect4Column(event);
-    if (col < 0) {
+  if (gameType === "connect4" || gameType === "tictactoe") {
+    const cell = getGridCell(event);
+    if (!cell) {
       return;
     }
-    const row = gravityDropRow(col);
-    if (row < 0) {
-      return;
+    if (gameType === "connect4") {
+      const row = gravityDropRow(cell.col);
+      if (row < 0) {
+        return;
+      }
+      pos = { row, col: cell.col };
+    } else {
+      pos = cell;
     }
-    pos = { row, col };
   } else {
     pos = getBoardPosition(event);
     if (!pos) {
