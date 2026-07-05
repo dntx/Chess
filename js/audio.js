@@ -129,22 +129,35 @@ function playBgmLayers(step) {
   if (step.pad) {
     step.pad.forEach((freq) => {
       playToneAt(freq, step.ms * 0.95, masterGain * 0.52, padType, 0);
+      if (bgmStyle === "eerie") {
+        // Detuned twin creates an unsettling beating shimmer.
+        playToneAt(freq * 1.008, step.ms * 0.95, masterGain * 0.34, padType, 0);
+      }
     });
   }
 
   if (step.bass) {
     playToneAt(step.bass, step.ms * 0.88, masterGain * 0.72, "triangle", 0);
+    if (bgmStyle === "horror") {
+      // Sub-octave rumble deepens the dread.
+      playToneAt(step.bass / 2, step.ms * 0.98, masterGain * 0.9, "sine", 0);
+    }
   }
 
   if (step.lead) {
     step.lead.forEach((freq, index) => {
-      playToneAt(
-        freq,
-        step.ms * (index === 0 ? 0.72 : 0.46),
-        masterGain * (index === 0 ? 1.05 : 0.8),
-        leadType,
-        index * Math.max(65, step.ms * 0.24)
-      );
+      const duration = step.ms * (index === 0 ? 0.72 : 0.46);
+      const gain = masterGain * (index === 0 ? 1.05 : 0.8);
+      const delay = index * Math.max(65, step.ms * 0.24);
+      playToneAt(freq, duration, gain, leadType, delay);
+      if (bgmStyle === "eerie") {
+        // Ghostly detuned echo.
+        playToneAt(freq * 1.006, duration, gain * 0.6, leadType, delay);
+      }
+      if (bgmStyle === "horror") {
+        // Harsh dissonant overtone turns stabs into shrieks.
+        playToneAt(freq * 1.032, duration * 0.85, gain * 0.55, "sawtooth", delay);
+      }
     });
   }
 }
