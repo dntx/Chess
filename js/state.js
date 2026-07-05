@@ -37,3 +37,4 @@ let bgmStep = 0;
 let bgmStyle = "happy";
 let bgmVolumeValue = 0.36;
 let bgmMuted = false;
+let bgmChain = null;
