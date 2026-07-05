@@ -122,6 +122,9 @@ function playToneAt(freq, durationMs, gainValue, type, offsetMs) {
 }
 
 function playBgmLayers(step) {
+  if (bgmMuted) {
+    return;
+  }
   const masterGain = 0.003 + bgmVolumeValue * 0.022;
   const leadType = bgmStyle === "tense" || bgmStyle === "horror" ? "sawtooth" : "triangle";
   const padType = bgmStyle === "calm" || bgmStyle === "eerie" ? "sine" : "triangle";

@@ -132,10 +132,18 @@ body {
 }
 
 .controls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  align-items: center;
+}
+
+.controls label {
+  white-space: nowrap;
+}
+
+.controls .sound-toggle:has(input[type="range"]) {
+  grid-column: 1 / -1;
 }
 
 .sound-toggle {
@@ -150,6 +158,22 @@ body {
 
 .sound-toggle input {
   margin: 0;
+}
+
+.volume-control input[type="range"] {
+  flex: 1;
+  min-width: 90px;
+}
+
+.mute-btn {
+  padding: 4px 9px;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.mute-btn.muted {
+  filter: grayscale(1);
+  opacity: 0.7;
 }
 
 label {
@@ -342,6 +366,7 @@ button:hover {
   }
 
   .controls {
+    display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;

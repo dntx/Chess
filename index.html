@@ -18,17 +18,17 @@
 
     <section class="panel">
       <div class="controls">
-        <label for="modeSelect">模式</label>
-        <select id="modeSelect">
-          <option value="pvp">双人对战</option>
-          <option value="pve">人机对战</option>
-        </select>
-
         <label for="gameTypeSelect">棋种</label>
         <select id="gameTypeSelect">
           <option value="gomoku" selected>五子棋</option>
           <option value="connect6">六子棋</option>
           <option value="connect4">四子棋</option>
+        </select>
+
+        <label for="modeSelect">模式</label>
+        <select id="modeSelect">
+          <option value="pvp">双人对战</option>
+          <option value="pve" selected>人机对战</option>
         </select>
 
         <label for="difficultySelect">难度</label>
@@ -43,12 +43,12 @@
         <button id="resetBtn" type="button">重新开始</button>
 
         <label class="sound-toggle" for="soundToggle">
-          <input id="soundToggle" type="checkbox" checked>
+          <input id="soundToggle" type="checkbox">
           音效
         </label>
 
         <label class="sound-toggle" for="bgmToggle">
-          <input id="bgmToggle" type="checkbox" checked>
+          <input id="bgmToggle" type="checkbox">
           背景音乐
         </label>
 
@@ -61,10 +61,11 @@
           <option value="horror">恐怖</option>
         </select>
 
-        <label class="sound-toggle" for="bgmVolume">
-          音乐音量
+        <div class="sound-toggle volume-control">
+          <button id="muteBtn" type="button" class="mute-btn" aria-label="静音">🔊</button>
+          <label for="bgmVolume">音量</label>
           <input id="bgmVolume" type="range" min="0" max="100" value="36" step="1">
-        </label>
+        </div>
       </div>
 
       <div class="status-wrap">
