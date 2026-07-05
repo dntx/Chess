@@ -6,16 +6,22 @@ function chooseAiMove() {
   const config = difficultyConfig[difficulty] || difficultyConfig.normal;
   const centerIndex = Math.floor(boardCols / 2);
 
+  // 危险棋型“技能”按难度启用（概率见 difficultyConfig）：
+  //   简单：按概率抢/堵（ownWinChance / blockKillChance），其余靠打分 —— 明显更弱。
+  //   普通：必抢自己的一步杀、必堵对手一步杀（连四等），但不处理活三这类两步杀。
+  //   困难：再加抢攻(活四/双威胁)与堵活三(twoStepKill)。
+  // 注：自己/对手的“一子致胜”始终处理（下方 findInstantWinMove，属基线而非技能）。
   const winMove = findInstantWinMove(WHITE);
   if (winMove) {
     return winMove;
   }
 
-  // 一回合可下多子的棋种（六子棋）：若本回合就能连成获胜（如连四补 2 子成 6），
-  // 直接赢 —— 优先于去堵对手：我们这回合先赢，对手根本没有落子机会。
-  const multiStoneWin = findMultiStoneWinMove(WHITE);
-  if (multiStoneWin) {
-    return multiStoneWin;
+  if (config.ownWinChance >= 1 || Math.random() < config.ownWinChance) {
+    // 本回合多子成杀（六子棋连四补 2 子成 6）——优先于堵：我们这回合先赢。
+    const multiStoneWin = findMultiStoneWinMove(WHITE);
+    if (multiStoneWin) {
+      return multiStoneWin;
+    }
   }
 
   const blockMove = findInstantWinMove(BLACK);
@@ -23,26 +29,27 @@ function chooseAiMove() {
     return blockMove;
   }
 
-  const humanThreats = findThreats().filter((t) => t.player === BLACK);
+  if (config.blockKillChance >= 1 || Math.random() < config.blockKillChance) {
+    const humanThreats = findThreats().filter((t) => t.player === BLACK);
 
-  // Must-block: the human could win on their very next turn (六子棋连四 等需多子完成的)。
-  const criticalBlock = blockBestThreatCell(humanThreats.filter((t) => t.level === "critical"), BLACK);
-  if (criticalBlock) {
-    return criticalBlock;
-  }
+    // 一步杀：对手下一回合就能赢的棋型（冲四、六子棋连四）。
+    const criticalBlock = blockBestThreatCell(humanThreats.filter((t) => t.level === "critical"), BLACK);
+    if (criticalBlock) {
+      return criticalBlock;
+    }
 
-  // If we can force our own win this move — create more winning spots than the opponent
-  // can block in one turn (e.g. turn our own 活三 into 活四) — race instead of passively
-  // blocking the human's 活三: our 活四 wins before their 活三 ever matures.
-  const forcedWin = findForcedWinMove(WHITE);
-  if (forcedWin) {
-    return forcedWin;
-  }
-
-  // Otherwise block the human's 活三 (danger) so it can't become a 活四 for free.
-  const dangerBlock = blockBestThreatCell(humanThreats.filter((t) => t.level === "danger"), BLACK);
-  if (dangerBlock) {
-    return dangerBlock;
+    if (config.twoStepKill) {
+      // 抢攻不过度堵：能造出对手一回合堵不完的必胜（活三走成活四 等）就先抢自己的。
+      const forcedWin = findForcedWinMove(WHITE);
+      if (forcedWin) {
+        return forcedWin;
+      }
+      // 否则堵对手的活三（两步杀），以免对手白拿一个活四。
+      const dangerBlock = blockBestThreatCell(humanThreats.filter((t) => t.level === "danger"), BLACK);
+      if (dangerBlock) {
+        return dangerBlock;
+      }
+    }
   }
 
   const candidates = [];
@@ -118,10 +125,12 @@ function chooseConnect4Move() {
   }
 
   // Force a win via a double threat: a drop that creates two winning drops at once
-  // (the opponent can only block one). Same helper the intersection games use.
-  const forcedWin = findForcedWinMove(WHITE);
-  if (forcedWin) {
-    return forcedWin;
+  // (the opponent can only block one). Only the hard difficulty plays this actively.
+  if (config.twoStepKill) {
+    const forcedWin = findForcedWinMove(WHITE);
+    if (forcedWin) {
+      return forcedWin;
+    }
   }
 
   const candidates = [];
