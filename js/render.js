@@ -199,11 +199,11 @@ function drawConnect4Board() {
       const y = originY + (r + 0.5) * cell;
       const radius = cell * 0.4;
       if (board[r][c] === EMPTY) {
-        ctx.fillStyle = "#fff8e9";
+        ctx.fillStyle = "#9c6323";
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = "#00000015";
+        ctx.strokeStyle = "#00000040";
         ctx.lineWidth = 2;
         ctx.stroke();
       } else {
