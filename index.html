@@ -24,6 +24,12 @@
           <option value="pve">人机对战</option>
         </select>
 
+        <label for="gameTypeSelect">棋种</label>
+        <select id="gameTypeSelect">
+          <option value="gomoku" selected>五子棋</option>
+          <option value="connect6">六子棋</option>
+        </select>
+
         <label for="difficultySelect">难度</label>
         <select id="difficultySelect">
           <option value="easy">简单</option>
@@ -50,6 +56,8 @@
           <option value="happy" selected>欢快</option>
           <option value="calm">安静</option>
           <option value="tense">紧张</option>
+          <option value="eerie">诡异</option>
+          <option value="horror">恐怖</option>
         </select>
 
         <label class="sound-toggle" for="bgmVolume">
@@ -79,6 +87,7 @@
       <h2>小提示</h2>
       <ul>
         <li>黑棋先手，连成五个同色棋子即可获胜。</li>
+        <li>六子棋：黑棋第一手下 1 子，之后每方每回合各下 2 子，先连成 6 子获胜。</li>
         <li>人机模式下你执黑棋，电脑执白棋。</li>
         <li>悔棋：双人撤回 1 步；人机模式会回退到你落子前。</li>
         <li>可单独开关音效与背景音乐，还能调整音乐风格和音量。</li>
