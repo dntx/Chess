@@ -83,7 +83,7 @@ function undoMove() {
     refreshStartOverlay();
     playSound("undo");
     drawBoard();
-    updateStatus("已收回，电脑执黑先手～点“让小熊先下”或棋盘开始");
+    updateStatus("已收回，电脑执黑先手～点“让小熊先下”开始");
     return;
   }
 
@@ -166,7 +166,7 @@ setInterval(() => {
 }, 420);
 
 canvas.addEventListener("click", handleHumanMove);
-startOverlay.addEventListener("click", startAiOpening);
+startAiBtn.addEventListener("click", startAiOpening);
 undoBtn.addEventListener("click", () => {
   ensureAudioContext();
   undoMove();
