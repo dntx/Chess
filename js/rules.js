@@ -1,5 +1,14 @@
 function createBoard() {
-  return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(EMPTY));
+  return Array.from({ length: boardRows }, () => Array(boardCols).fill(EMPTY));
+}
+
+function gravityDropRow(col) {
+  for (let r = boardRows - 1; r >= 0; r -= 1) {
+    if (board[r][col] === EMPTY) {
+      return r;
+    }
+  }
+  return -1;
 }
 
 function deriveTurnState(n) {
@@ -38,25 +47,44 @@ function resetGame() {
   mode = modeSelect.value;
   difficulty = difficultySelect.value;
   gameType = gameTypeSelect.value;
-  BOARD_SIZE = gameType === "connect6" ? 19 : 15;
-  winLength = gameType === "connect6" ? 6 : 5;
+
+  if (gameType === "connect4") {
+    boardRows = 6;
+    boardCols = 7;
+    winLength = 4;
+  } else if (gameType === "connect6") {
+    boardRows = 19;
+    boardCols = 19;
+    winLength = 6;
+  } else {
+    boardRows = 15;
+    boardCols = 15;
+    winLength = 5;
+  }
+
   board = createBoard();
   gameOver = false;
   blinkOn = true;
   moveHistory = [];
   syncTurnState();
 
-  const title = gameType === "connect6" ? "森林小熊六子棋" : "森林小熊五子棋";
+  const titleMap = {
+    connect4: "森林小熊四子棋",
+    connect6: "森林小熊六子棋"
+  };
+  const title = titleMap[gameType] || "森林小熊五子棋";
   gameTitle.textContent = title;
   document.title = title;
   canvas.setAttribute("aria-label", `${title}棋盘`);
 
   hideCelebration();
-  updateStatus(
-    gameType === "connect6"
-      ? "六子棋：黑棋先手，第一手只下 1 子，之后每回合下 2 子"
-      : "黑棋先手，开始吧！"
-  );
+  let startMessage = "黑棋先手，开始吧！";
+  if (gameType === "connect6") {
+    startMessage = "六子棋：黑棋先手，第一手只下 1 子，之后每回合下 2 子";
+  } else if (gameType === "connect4") {
+    startMessage = "四子棋：点击一列落子，棋子会落到底部，先连成 4 子获胜";
+  }
+  updateStatus(startMessage);
   resizeBoard();
 }
 
@@ -96,9 +124,9 @@ function countOneDirection(row, col, dr, dc, player) {
   let c = col + dc;
   while (
     r >= 0 &&
-    r < BOARD_SIZE &&
+    r < boardRows &&
     c >= 0 &&
-    c < BOARD_SIZE &&
+    c < boardCols &&
     board[r][c] === player
   ) {
     count += 1;
@@ -109,8 +137,8 @@ function countOneDirection(row, col, dr, dc, player) {
 }
 
 function isBoardFull() {
-  for (let r = 0; r < BOARD_SIZE; r += 1) {
-    for (let c = 0; c < BOARD_SIZE; c += 1) {
+  for (let r = 0; r < boardRows; r += 1) {
+    for (let c = 0; c < boardCols; c += 1) {
       if (board[r][c] === EMPTY) {
         return false;
       }
@@ -120,7 +148,7 @@ function isBoardFull() {
 }
 
 function isInside(row, col) {
-  return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
+  return row >= 0 && row < boardRows && col >= 0 && col < boardCols;
 }
 
 function finishIfEnded(row, col, player) {
