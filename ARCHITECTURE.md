@@ -144,19 +144,24 @@ sequenceDiagram
 
 ## 8. AI 设计（第一版·简单启发式）
 
-`chooseAiMove()` 的决策优先级：
+`chooseAiMove()`（五子棋 / 六子棋 / 三子棋）的决策优先级：
 
 1. **能赢就赢**：`findInstantWinMove(WHITE)` —— 落一子即可连成 `winLength`。
-2. **必挡就挡**：`findInstantWinMove(BLACK)` —— 对手一子即将获胜则拦截。
-3. **打分选点**：对每个空点综合评估
+2. **本回合多子成杀**（`findMultiStoneWinMove(WHITE)`，仅 `stonesLeftThisTurn >= 2` 时，即六子棋）—— 若本回合剩余子数够直接连成获胜（如**连四补 2 子成 6**），先落其中一子（链式的下一子完成），抢先赢；此步在“堵”之前，因为我们这回合先赢、对手根本没机会落子。
+3. **必挡单子致胜**：`findInstantWinMove(BLACK)`。
+4. **堵对手必胜威胁**（`blockBestThreatCell(critical)`，**不分难度**）—— 对手下一回合就能赢的棋型（如六子棋需两子完成的连四）。逐一试落候选空缺格，选“落子后对手剩余威胁最少”的那个（同分再比自己进攻值）。
+5. **抢攻不过度堵**（`findForcedWinMove(WHITE)`）—— 若本步能造出“对手一回合堵不完”的必胜威胁（致胜点数 > `stonesPerTurn`，如把自己的**活三走成活四**、三子棋做**双威胁 fork**），就抢自己的必胜，而**不去堵对手的活三**。此步排在 danger 之前正是为避免“过度堵”。
+6. **堵对手活三**（`blockBestThreatCell(danger)`）—— 上一步抢不到必胜时，才去堵对手的 danger（活三），以免对手白拿一个活四。
+7. **打分选点**：对每个空点综合评估
    - `evaluatePoint`：己方进攻价值 + 对方威胁价值（按连子数/活口用 `scorePattern` 计分）。
    - `evaluatePotentialFork`：是否形成双威胁（fork）。
    - `centerBias`：靠中心加分。
    - 难度噪声：`difficultyConfig` 控制随机性与候选池大小（简单更随机，困难更稳）。
 
-六子棋下，AI 每回合的 2 子由 `aiMove()` **逐子链式**完成（每子间有短延时便于观察），每落一子后重新评估。四子棋由 `chooseConnect4Move()` 处理：只在每列的重力落点中选择，同样先做「能赢/必挡」判断，再按进攻/防守/居中打分。
+六子棋下，AI 每回合的 2 子由 `aiMove()` **逐子链式**完成（每子间有短延时便于观察），每落一子后重新评估——第 2 步就是靠这个链式：先落连四的一个空档变连五，下一子即时成杀。四子棋由 `chooseConnect4Move()` 处理：只在每列的重力落点中选择，先做「能赢/必挡」判断，再用 `findForcedWinMove(WHITE)` 抢“两个必胜落点”的双威胁（对手只能堵一个），最后才按进攻/防守/居中打分（四子棋无 danger 层，危险棋型都是单子致胜，已被「必挡」覆盖，故不会过度堵）。
 
-> 说明：即时拦截仅覆盖“单子致胜”。六子棋中需要两子完成的复杂威胁、四子棋的多步陷阱尚未处理，属后续增强点。
+> 各棋种是否会“过度堵”？三子棋、四子棋没有 danger 层（`winLength < 5`），只堵单子致胜，天然不会过度堵，且都用 `findForcedWinMove` 抢双威胁 fork；五子棋靠第 5 步优先抢活四；六子棋的连四本身是 critical（必挡）而非 danger，且第 2 步会优先“本回合直接连成 6”。
+> `findThreats` 供 AI 防守（不受棋盘提示开关影响），也供界面高亮（经 `refreshThreats` 按开关显示）。`findForcedWinMove` 只认“一步造出多于 `stonesPerTurn` 个致胜点”的强制胜，更隐蔽的四三 fork、多步 VCF 仍未处理，属后续增强点。
 
 ---
 

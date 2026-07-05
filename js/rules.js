@@ -180,7 +180,10 @@ function isPlayableCell(row, col) {
 //              Needs BOTH ends of a (winLength+1) window empty, so a 眠三 (blocked one
 //              side) is correctly ignored. Only meaningful when winLength >= 5.
 function findThreats() {
-  if (!threatHighlightEnabled || winLength < 3) {
+  // NOTE: intentionally NOT gated by threatHighlightEnabled — the AI relies on this
+  // for defense regardless of whether the on-screen hint is switched on. The display
+  // toggle is applied in refreshThreats() instead.
+  if (winLength < 3) {
     return [];
   }
 
