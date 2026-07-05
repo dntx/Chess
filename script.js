@@ -12,6 +12,9 @@ const resetBtn = document.getElementById("resetBtn");
 const soundToggle = document.getElementById("soundToggle");
 const statusText = document.getElementById("statusText");
 const turnDot = document.getElementById("turnDot");
+const celebration = document.getElementById("celebration");
+const confettiLayer = document.getElementById("confettiLayer");
+const winnerBanner = document.getElementById("winnerBanner");
 
 let board = createBoard();
 let currentPlayer = BLACK;
@@ -28,27 +31,27 @@ let audioCtx = null;
 const centerIndex = Math.floor(BOARD_SIZE / 2);
 const difficultyConfig = {
   easy: {
-    attack: 0.85,
-    defense: 0.72,
-    center: 0.65,
-    randomNoise: 420,
-    topPool: 8,
+    attack: 1.02,
+    defense: 0.94,
+    center: 0.85,
+    randomNoise: 230,
+    topPool: 5,
     useNeighborFilter: false
   },
   normal: {
-    attack: 1.08,
-    defense: 0.95,
-    center: 1,
-    randomNoise: 130,
-    topPool: 4,
+    attack: 1.2,
+    defense: 1.16,
+    center: 1.05,
+    randomNoise: 65,
+    topPool: 2,
     useNeighborFilter: true
   },
   hard: {
-    attack: 1.2,
-    defense: 1.14,
-    center: 1.08,
-    randomNoise: 15,
-    topPool: 2,
+    attack: 1.32,
+    defense: 1.3,
+    center: 1.12,
+    randomNoise: 0,
+    topPool: 1,
     useNeighborFilter: true
   }
 };
@@ -70,6 +73,7 @@ function resetGame() {
   lastMove = null;
   mode = modeSelect.value;
   difficulty = difficultySelect.value;
+  hideCelebration();
   updateStatus("黑棋先手，开始吧！");
   drawBoard();
 }
@@ -100,7 +104,7 @@ function drawBoard() {
   }
 
   // Star points make board reading easier.
-  const stars = [4, 8, 12];
+  const stars = [3, 7, 11];
   ctx.fillStyle = "#7a471a";
   for (const r of stars) {
     for (const c of stars) {
@@ -269,6 +273,7 @@ function finishIfEnded(row, col, player) {
     gameOver = true;
     const winnerText = player === BLACK ? "黑棋" : "白棋";
     playSound("win");
+    showCelebration(`${winnerText}胜利啦！`);
     updateStatus(`${winnerText}获胜！太棒啦！`);
     return true;
   }
@@ -323,6 +328,27 @@ function aiMove() {
   }
 
   const config = difficultyConfig[difficulty] || difficultyConfig.normal;
+  const winMove = findInstantWinMove(WHITE);
+  if (winMove) {
+    placeStone(winMove.row, winMove.col, WHITE);
+    if (finishIfEnded(winMove.row, winMove.col, WHITE)) {
+      return;
+    }
+    switchPlayer();
+    updateStatus("轮到你啦（黑棋）");
+    return;
+  }
+
+  const blockMove = findInstantWinMove(BLACK);
+  if (blockMove) {
+    placeStone(blockMove.row, blockMove.col, WHITE);
+    if (finishIfEnded(blockMove.row, blockMove.col, WHITE)) {
+      return;
+    }
+    switchPlayer();
+    updateStatus("轮到你啦（黑棋）");
+    return;
+  }
 
   const candidates = [];
   const hasAnyMove = moveHistory.length > 0;
@@ -339,10 +365,14 @@ function aiMove() {
 
       const attack = evaluatePoint(r, c, WHITE);
       const defense = evaluatePoint(r, c, BLACK);
+      const forkAttack = evaluatePotentialFork(r, c, WHITE);
+      const forkDefense = evaluatePotentialFork(r, c, BLACK);
       const centerBias = (BOARD_SIZE - 1) - (Math.abs(centerIndex - r) + Math.abs(centerIndex - c));
       const score =
         attack * config.attack +
         defense * config.defense +
+        forkAttack * 0.6 +
+        forkDefense * 0.52 +
         centerBias * config.center +
         Math.random() * config.randomNoise;
 
@@ -425,6 +455,74 @@ function hasNeighbor(row, col, distance) {
     }
   }
   return false;
+}
+
+function findInstantWinMove(player) {
+  for (let r = 0; r < BOARD_SIZE; r += 1) {
+    for (let c = 0; c < BOARD_SIZE; c += 1) {
+      if (board[r][c] !== EMPTY) {
+        continue;
+      }
+      board[r][c] = player;
+      const wins = hasFive(r, c, player);
+      board[r][c] = EMPTY;
+      if (wins) {
+        return { row: r, col: c };
+      }
+    }
+  }
+  return null;
+}
+
+function evaluatePotentialFork(row, col, player) {
+  board[row][col] = player;
+  const dirs = [
+    [1, 0],
+    [0, 1],
+    [1, 1],
+    [1, -1]
+  ];
+  let strongLines = 0;
+
+  for (const [dr, dc] of dirs) {
+    let count = 1;
+    let openEnds = 0;
+
+    let r = row + dr;
+    let c = col + dc;
+    while (isInside(r, c) && board[r][c] === player) {
+      count += 1;
+      r += dr;
+      c += dc;
+    }
+    if (isInside(r, c) && board[r][c] === EMPTY) {
+      openEnds += 1;
+    }
+
+    r = row - dr;
+    c = col - dc;
+    while (isInside(r, c) && board[r][c] === player) {
+      count += 1;
+      r -= dr;
+      c -= dc;
+    }
+    if (isInside(r, c) && board[r][c] === EMPTY) {
+      openEnds += 1;
+    }
+
+    if (count >= 3 && openEnds >= 1) {
+      strongLines += 1;
+    }
+  }
+
+  board[row][col] = EMPTY;
+  if (strongLines >= 2) {
+    return 1800;
+  }
+  if (strongLines === 1) {
+    return 460;
+  }
+  return 0;
 }
 
 function scorePattern(count, openEnds) {
@@ -561,6 +659,37 @@ function playSound(kind, player) {
   gain.connect(ctxAudio.destination);
   osc.start(now);
   osc.stop(now + duration + 0.02);
+}
+
+function showCelebration(text) {
+  if (!celebration || !confettiLayer || !winnerBanner) {
+    return;
+  }
+
+  winnerBanner.textContent = text;
+  celebration.classList.remove("hidden");
+  confettiLayer.innerHTML = "";
+
+  const colors = ["#ff6b6b", "#ffd93d", "#6bcBff", "#74f089", "#ff9f68", "#c18cff"];
+  const count = 34;
+
+  for (let i = 0; i < count; i += 1) {
+    const piece = document.createElement("span");
+    piece.className = "confetti";
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = `${Math.random() * 0.28}s`;
+    piece.style.animationDuration = `${1.1 + Math.random() * 0.8}s`;
+    confettiLayer.appendChild(piece);
+  }
+}
+
+function hideCelebration() {
+  if (!celebration || !confettiLayer) {
+    return;
+  }
+  celebration.classList.add("hidden");
+  confettiLayer.innerHTML = "";
 }
 
 setInterval(() => {
