@@ -153,17 +153,6 @@ body {
   margin: 0;
 }
 
-.board-size-pill {
-  display: inline-flex;
-  align-items: center;
-  background: #fff3bf;
-  border: 2px solid #e1c26f;
-  color: #6b4a22;
-  border-radius: 999px;
-  padding: 7px 11px;
-  font-weight: 700;
-}
-
 label {
   font-weight: 700;
 }
