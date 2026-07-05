@@ -41,7 +41,7 @@ body {
 }
 
 .app {
-  width: min(1120px, 100%);
+  width: min(1320px, 100%);
   background: var(--card);
   border: 4px solid #7aa651;
   border-radius: 20px;
@@ -51,12 +51,12 @@ body {
   z-index: 1;
   animation: pop-in 500ms ease;
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(320px, 1fr);
+  grid-template-columns: minmax(240px, 300px) minmax(360px, 1fr) minmax(240px, 300px);
   grid-template-areas:
-    "topbar topbar"
-    "panel board"
-    "tips board";
+    "topbar topbar topbar"
+    "panel board tips";
   gap: 12px 16px;
+  align-items: start;
 }
 
 @keyframes pop-in {
@@ -122,10 +122,9 @@ body {
 .panel {
   grid-area: panel;
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: stretch;
   background: #fff3d5;
   border: 2px dashed #d8b26b;
   border-radius: 14px;
@@ -134,9 +133,9 @@ body {
 
 .controls {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: stretch;
 }
 
 .sound-toggle {
@@ -320,15 +319,33 @@ button:hover {
   margin: 4px 0;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1000px) {
   .app {
-    padding: 12px;
     grid-template-columns: 1fr;
     grid-template-areas:
       "topbar"
       "panel"
       "board"
       "tips";
+  }
+
+  .panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding: 12px;
   }
 
   .panel {
