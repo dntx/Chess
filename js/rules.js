@@ -164,6 +164,7 @@ function finishIfEnded(row, col, player) {
   if (isBoardFull()) {
     gameOver = true;
     playSound("draw");
+    showDraw("平局！棋盘满啦！");
     updateStatus("平局！棋盘满啦！");
     return true;
   }

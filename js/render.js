@@ -260,6 +260,7 @@ function showCelebration(text) {
   }
 
   winnerBanner.textContent = text;
+  winnerBanner.classList.remove("draw");
   celebration.classList.remove("hidden");
   confettiLayer.innerHTML = "";
 
@@ -282,5 +283,15 @@ function hideCelebration() {
     return;
   }
   celebration.classList.add("hidden");
+  confettiLayer.innerHTML = "";
+}
+
+function showDraw(text) {
+  if (!celebration || !confettiLayer || !winnerBanner) {
+    return;
+  }
+  winnerBanner.textContent = text;
+  winnerBanner.classList.add("draw");
+  celebration.classList.remove("hidden");
   confettiLayer.innerHTML = "";
 }
