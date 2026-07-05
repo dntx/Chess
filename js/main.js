@@ -86,6 +86,7 @@ function undoMove() {
   }
 
   syncTurnState();
+  refreshThreats();
   playSound("undo");
   drawBoard();
 
@@ -175,6 +176,11 @@ difficultySelect.addEventListener("change", () => {
     updateStatus(`已切换难度：${difficultySelect.options[difficultySelect.selectedIndex].text}`);
   }
 });
+threatToggle.addEventListener("change", () => {
+  threatHighlightEnabled = threatToggle.checked;
+  refreshThreats();
+  drawBoard();
+});
 soundToggle.addEventListener("change", () => {
   if (soundToggle.checked) {
     ensureAudioContext();
@@ -223,4 +229,5 @@ window.addEventListener("resize", resizeBoard);
 
 bgmStyle = bgmStyleSelect.value;
 bgmVolumeValue = Number(bgmVolume.value) / 100;
+threatHighlightEnabled = threatToggle.checked;
 resetGame();

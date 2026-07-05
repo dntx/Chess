@@ -66,6 +66,8 @@ function drawBoard() {
       drawLastMoveMarker(stone.row, stone.col);
     }
   }
+
+  drawThreats();
 }
 
 function getStarPoints() {
@@ -169,6 +171,73 @@ function drawLastMoveRing(x, y, radius) {
   ctx.restore();
 }
 
+function threatCenter(row, col) {
+  if (gameType === "connect4") {
+    const { cell, originX, originY } = gridGeometry();
+    return { x: originX + (col + 0.5) * cell, y: originY + (row + 0.5) * cell, radius: cell * 0.4 };
+  }
+  if (gameType === "tictactoe") {
+    const { cell, originX, originY } = gridGeometry();
+    return { x: originX + (col + 0.5) * cell, y: originY + (row + 0.5) * cell, radius: cell * 0.32 };
+  }
+  return { x: (col + 1) * cellSize, y: (row + 1) * cellSize, radius: cellSize * 0.43 };
+}
+
+function drawThreats() {
+  if (!threatHighlightEnabled || gameOver || !threats || threats.length === 0) {
+    return;
+  }
+
+  const criticalCells = new Set();
+  for (const threat of threats) {
+    if (threat.level === "critical") {
+      for (const cell of threat.cells) {
+        criticalCells.add(`${cell.row}.${cell.col}`);
+      }
+    }
+  }
+
+  const pulse = blinkOn ? 1 : 0.5;
+
+  // Open three (活三 等): 不堵下一手就成活四，用醒目的橙色光圈标出三颗子。
+  for (const threat of threats) {
+    if (threat.level !== "danger") {
+      continue;
+    }
+    for (const cell of threat.cells) {
+      if (criticalCells.has(`${cell.row}.${cell.col}`)) {
+        continue;
+      }
+      const { x, y, radius } = threatCenter(cell.row, cell.col);
+      drawThreatRing(x, y, radius * 1.12, "#ff6f00", 0.5 + 0.45 * pulse, radius * 0.16, 12);
+    }
+  }
+
+  // Bold red glow on the stones that form the must-block line (stones only, no gaps).
+  for (const threat of threats) {
+    if (threat.level !== "critical") {
+      continue;
+    }
+    for (const cell of threat.cells) {
+      const { x, y, radius } = threatCenter(cell.row, cell.col);
+      drawThreatRing(x, y, radius * 1.16, "#ff3b30", 0.55 + 0.45 * pulse, radius * 0.17, 14);
+    }
+  }
+}
+
+function drawThreatRing(x, y, radius, color, alpha, lineWidth, glow) {
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, lineWidth);
+  ctx.shadowColor = color;
+  ctx.shadowBlur = glow;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function getBoardPosition(event) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -224,6 +293,8 @@ function drawConnect4Board() {
       drawLastMoveRing(x, y, cell * 0.44);
     }
   }
+
+  drawThreats();
 }
 
 function drawTicTacToeBoard() {
@@ -268,6 +339,8 @@ function drawTicTacToeBoard() {
       drawLastMoveRing(x, y, cell * 0.38);
     }
   }
+
+  drawThreats();
 }
 
 function getGridCell(event) {
