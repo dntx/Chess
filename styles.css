@@ -146,6 +146,12 @@ body {
   grid-column: 1 / -1;
 }
 
+.controls .threat-toggle {
+  grid-column: 1 / -1;
+  background: #fff0e6;
+  border-color: #ffb38a;
+}
+
 .sound-toggle {
   display: inline-flex;
   align-items: center;

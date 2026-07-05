@@ -43,8 +43,8 @@ Chess/
 |------|------|---------|
 | `config.js` | 只读常量与配置数据 | `EMPTY/BLACK/WHITE` `BGM_SCORES` `difficultyConfig` |
 | `state.js` | DOM 元素引用 + 所有可变全局状态 | `board` `boardRows`/`boardCols` `currentPlayer` `gameType` `winLength` `stonesLeftThisTurn` `moveHistory` `bgm*` 等 |
-| `rules.js` | 棋局规则与回合推导 | `createBoard` `gravityDropRow` `deriveTurnState` `isFreshTurnStart` `syncTurnState` `resetGame` `placeStone` `hasWin` `finishIfEnded` |
-| `render.js` | 画面与文字反馈 | `drawBoard` `drawConnect4Board` `drawTicTacToeBoard` `drawDisc` `gridGeometry` `getBoardPosition` `getGridCell` `resizeBoard` `updateStatus` `showCelebration` `showDraw` |
+| `rules.js` | 棋局规则与回合推导 | `createBoard` `gravityDropRow` `deriveTurnState` `isFreshTurnStart` `syncTurnState` `resetGame` `placeStone` `hasWin` `finishIfEnded` `findThreats` |
+| `render.js` | 画面与文字反馈 | `drawBoard` `drawConnect4Board` `drawTicTacToeBoard` `drawDisc` `gridGeometry` `getBoardPosition` `getGridCell` `resizeBoard` `updateStatus` `showCelebration` `showDraw` `drawThreats` |
 | `ai.js` | 电脑走子（简单启发式） | `chooseAiMove` `chooseConnect4Move` `aiMove` `evaluatePoint` `evaluatePotentialFork` `findInstantWinMove` `scorePattern` |
 | `audio.js` | 声音合成 | `ensureAudioContext` `playSound` `playTone(At)` `playBgmLayers` `playBgmStep` `startBgm` `stopBgm` `restartBgm` |
 | `main.js` | 用户交互与生命周期 | `handleHumanMove` `undoMove` + 事件监听 + 初始化 |
@@ -175,6 +175,10 @@ sequenceDiagram
 
 - 单个 `<canvas>` 全量重绘：`drawBoard()` 画网格、星位（15×15 为四角 + 中心共 5 个；19×19 为标准 9 个）、所有棋子，以及最近一回合落子的闪烁高亮（六子棋会同时闪 2 子）。
 - `setInterval` 每 420ms 翻转 `blinkOn` 实现“上一手”闪动。
+- **危险棋型提示**（默认开，`#threatToggle` / 全局 `threatHighlightEnabled`）：`findThreats()`(rules.js) 用滑窗扫描双方“必须要堵”的棋型，返回 `{player, level, cells, gains}`；`drawThreats()`(render.js) 高亮：
+  - **critical**（对手下一回合就能赢，必堵）——长度 `winLength` 的窗内无对方子、空点数 ≤ `stonesPerTurn` 且都**可落**，只给这些**棋子**画红色发光圈（不标空位，避免信息过多）。`stonesPerTurn` 单子棋种为 1（差 1 子的冲四/连三/连二），**六子棋为 2**（一回合下 2 子，故连四“差 2 子”也算必堵——不堵下一手补 2 子直接连 6；空点用 `isPlayableCell` 校验，四子棋判重力）。
+  - **danger**（真·活三：不堵下一手就成活四）——长度 `winLength+1` 的窗、**两端皆空**、含 `winLength-2` 子，画醒目橙色圈。两端皆空是关键：眠三 / 被夹的三（只能成冲四）不会误报。仅在 `winLength >= 5` 时检测（主要是五子棋活三；六子棋的活四已被 critical 覆盖）。
+  - 落子/悔棋/切换/开关时经 `refreshThreats()` 重算并存入全局 `threats`，脉冲复用 `blinkOn`；被 critical 覆盖的子不再叠 danger 橙圈，胜负或关闭时不绘制。
 - `resizeBoard()` 按棋种设定画布分辨率（15×15 → 540px，19×19 → 660px），并重算 `cellSize`；CSS 用 `max-width: 100%` + `aspect-ratio` 在小屏上等比缩放，不溢出。
 - 胜负时 `showCelebration()` 叠加彩带 + 发光横幅（CSS 动画）。
 
@@ -187,6 +191,7 @@ sequenceDiagram
 | 调整 AI 强弱/策略 | `js/ai.js`（必要时 `difficultyConfig` in `config.js`） |
 | 新增/修改背景音乐 | `config.js` 的 `BGM_SCORES` + 必要时 `audio.js` |
 | 改棋盘/棋子/特效外观 | `js/render.js` + `styles.css` |
+| 调整危险棋型提示 | `js/rules.js`（`findThreats` 检测规则）+ `js/render.js`（`drawThreats` 绘制样式） |
 | 加新规则或棋种 | `js/rules.js`（优先复用 `winLength`/`deriveTurnState`，勿按棋种拆文件） |
 | 加控件/交互 | `index.html` + `js/main.js`（事件绑定） |
 | 新增全局状态 | `js/state.js` |

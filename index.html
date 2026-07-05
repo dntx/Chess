@@ -39,6 +39,11 @@
           <option value="hard">困难</option>
         </select>
 
+        <label class="sound-toggle threat-toggle" for="threatToggle">
+          <input id="threatToggle" type="checkbox" checked>
+          危险棋型提示（冲四 / 活三）
+        </label>
+
         <button id="undoBtn" type="button">悔棋</button>
 
         <button id="resetBtn" type="button">重新开始</button>
@@ -94,6 +99,7 @@
         <li>人机模式下你执黑棋，电脑执白棋。</li>
         <li>悔棋：双人撤回 1 步；人机模式回退到你落子前。</li>
         <li>音效与背景音乐可分别开关，也能调风格和音量。</li>
+        <li>危险棋型提示：出现“必须要堵”的棋型（五子棋的冲四 / 活三，六子棋的连四 / 连五等）时，会给棋盘上的相关棋子加高亮光圈提醒（红圈＝必堵，橙圈＝活三）。默认开启，可在上方关闭。</li>
         <li>原创森林风格，适合小朋友游玩。</li>
       </ul>
     </section>

@@ -70,6 +70,7 @@ function resetGame() {
   gameOver = false;
   blinkOn = true;
   moveHistory = [];
+  threats = [];
   syncTurnState();
 
   const titleMap = {
@@ -102,6 +103,7 @@ function placeStone(row, col, player) {
   board[row][col] = player;
   moveHistory.push({ row, col, player });
   playSound("place", player);
+  refreshThreats();
   drawBoard();
   return true;
 }
@@ -158,9 +160,124 @@ function isInside(row, col) {
   return row >= 0 && row < boardRows && col >= 0 && col < boardCols;
 }
 
+function isPlayableCell(row, col) {
+  if (!isInside(row, col) || board[row][col] !== EMPTY) {
+    return false;
+  }
+  if (gameType === "connect4") {
+    return gravityDropRow(col) === row;
+  }
+  return true;
+}
+
+// Detect "must-block" shapes for both colors so the UI can highlight them.
+// Generalised by winLength + how many stones a side plays per turn:
+//   critical = opponent can WIN on their very next turn. A winLength window with no
+//              opponent stones whose reachable empty count <= stonesPerTurn.
+//              单子棋种(五/四/三子棋) => 差 1 子(冲四类); 六子棋每回合 2 子 => 差 1~2 子
+//              (连四 或 连五) 都必须堵，否则对手一回合补 2 子直接连成 6。
+//   danger   = a TRUE open three: one move from an open four (活四) that then wins.
+//              Needs BOTH ends of a (winLength+1) window empty, so a 眠三 (blocked one
+//              side) is correctly ignored. Only meaningful when winLength >= 5.
+function findThreats() {
+  if (!threatHighlightEnabled || winLength < 3) {
+    return [];
+  }
+
+  const dirs = [
+    [1, 0],
+    [0, 1],
+    [1, 1],
+    [1, -1]
+  ];
+  const grouped = new Map();
+  const detectOpenThree = winLength >= 5;
+  // 六子棋一回合下 2 子，对手下一回合能补满 2 个空的连线也算必堵；其余棋种每回合 1 子。
+  const stonesPerTurn = gameType === "connect6" ? 2 : 1;
+
+  const addThreat = (player, level, cells, gains) => {
+    const key = `${player}|${level}|${cells.map((p) => `${p.row}.${p.col}`).join("_")}`;
+    let entry = grouped.get(key);
+    if (!entry) {
+      entry = { player, level, cells, gains: [] };
+      grouped.set(key, entry);
+    }
+    for (const gain of gains) {
+      if (!entry.gains.some((g) => g.row === gain.row && g.col === gain.col)) {
+        entry.gains.push(gain);
+      }
+    }
+  };
+
+  // Read `span` cells from (r,c) along (dr,dc). Returns null if an opponent stone
+  // is inside the window, otherwise the player's stones and the empty cells.
+  const scanWindow = (player, r, c, dr, dc, span) => {
+    const cells = [];
+    const empties = [];
+    for (let k = 0; k < span; k += 1) {
+      const rr = r + dr * k;
+      const cc = c + dc * k;
+      const value = board[rr][cc];
+      if (value === player) {
+        cells.push({ row: rr, col: cc });
+      } else if (value === EMPTY) {
+        empties.push({ row: rr, col: cc });
+      } else {
+        return null;
+      }
+    }
+    return { cells, empties };
+  };
+
+  for (const player of [BLACK, WHITE]) {
+    for (let r = 0; r < boardRows; r += 1) {
+      for (let c = 0; c < boardCols; c += 1) {
+        for (const [dr, dc] of dirs) {
+          // critical: opponent can win on their very next turn — a winLength window
+          // with no opponent stones whose (reachable) empty count <= stonesPerTurn.
+          // 单子棋种 => 差 1 子(冲四/连三/连二); 六子棋一回合 2 子 => 差 1~2 子(连四/连五)都必堵。
+          if (isInside(r + dr * (winLength - 1), c + dc * (winLength - 1))) {
+            const win = scanWindow(player, r, c, dr, dc, winLength);
+            if (
+              win &&
+              win.empties.length >= 1 &&
+              win.empties.length <= stonesPerTurn &&
+              win.empties.every((e) => isPlayableCell(e.row, e.col))
+            ) {
+              addThreat(player, "critical", win.cells, win.empties);
+            }
+          }
+
+          // danger (open three): winLength+1 window, both ends empty, winLength-2 stones.
+          // The two empty ends guarantee it can grow into an open four (活四).
+          if (detectOpenThree && isInside(r + dr * winLength, c + dc * winLength)) {
+            const open = scanWindow(player, r, c, dr, dc, winLength + 1);
+            if (
+              open &&
+              open.cells.length === winLength - 2 &&
+              board[r][c] === EMPTY &&
+              board[r + dr * winLength][c + dc * winLength] === EMPTY
+            ) {
+              addThreat(player, "danger", open.cells, open.empties);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(grouped.values());
+}
+
+function refreshThreats() {
+  threats = threatHighlightEnabled ? findThreats() : [];
+}
+
 function finishIfEnded(row, col, player) {
   if (hasWin(row, col, player)) {
     gameOver = true;
+    threats = [];
+    drawBoard();
     const winnerText = player === BLACK ? "黑棋" : "白棋";
     playWinFanfare();
     showCelebration(`${winnerText}胜利啦！`);
@@ -170,6 +287,8 @@ function finishIfEnded(row, col, player) {
 
   if (isBoardFull()) {
     gameOver = true;
+    threats = [];
+    drawBoard();
     playSound("draw");
     showDraw("平局！棋盘满啦！");
     updateStatus("平局！棋盘满啦！");

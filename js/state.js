@@ -20,6 +20,7 @@ const confirmModal = document.getElementById("confirmModal");
 const confirmMessage = document.getElementById("confirmMessage");
 const confirmOkBtn = document.getElementById("confirmOkBtn");
 const confirmCancelBtn = document.getElementById("confirmCancelBtn");
+const threatToggle = document.getElementById("threatToggle");
 
 let board = [];
 let currentPlayer = BLACK;
@@ -43,3 +44,5 @@ let bgmVolumeValue = 0.36;
 let bgmMuted = false;
 let bgmChain = null;
 let confirmResolver = null;
+let threats = [];
+let threatHighlightEnabled = true;
