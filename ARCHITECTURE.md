@@ -1,6 +1,6 @@
 # 架构文档 · 森林小熊五子棋 / 六子棋
 
-一个纯静态、可离线运行的网页棋类游戏。支持五子棋与六子棋，双人与人机对战，带音效与背景音乐。
+一个纯静态、可离线运行的网页棋类游戏。支持五子棋、六子棋与四子棋，双人与人机对战，带音效与背景音乐。
 
 ---
 
@@ -41,11 +41,11 @@ Chess/
 
 | 模块 | 职责 | 关键成员 |
 |------|------|---------|
-| `config.js` | 只读常量与配置数据 | `BOARD_SIZE` `EMPTY/BLACK/WHITE` `centerIndex` `BGM_SCORES` `difficultyConfig` |
-| `state.js` | DOM 元素引用 + 所有可变全局状态 | `board` `currentPlayer` `gameOver` `gameType` `winLength` `stonesLeftThisTurn` `moveHistory` `bgm*` 等 |
-| `rules.js` | 棋局规则与回合推导 | `createBoard` `deriveTurnState` `isFreshTurnStart` `syncTurnState` `resetGame` `placeStone` `hasWin` `finishIfEnded` |
-| `render.js` | 画面与文字反馈 | `drawBoard` `drawStone` `drawStar` `drawLastMoveMarker` `getBoardPosition` `resizeBoard` `updateStatus` `updateTurnStatus` `showCelebration` `hideCelebration` |
-| `ai.js` | 电脑走子（简单启发式） | `chooseAiMove` `aiMove` `evaluatePoint` `evaluatePotentialFork` `findInstantWinMove` `hasNeighbor` `scorePattern` |
+| `config.js` | 只读常量与配置数据 | `EMPTY/BLACK/WHITE` `BGM_SCORES` `difficultyConfig` |
+| `state.js` | DOM 元素引用 + 所有可变全局状态 | `board` `boardRows`/`boardCols` `currentPlayer` `gameType` `winLength` `stonesLeftThisTurn` `moveHistory` `bgm*` 等 |
+| `rules.js` | 棋局规则与回合推导 | `createBoard` `gravityDropRow` `deriveTurnState` `isFreshTurnStart` `syncTurnState` `resetGame` `placeStone` `hasWin` `finishIfEnded` |
+| `render.js` | 画面与文字反馈 | `drawBoard` `drawConnect4Board` `drawDisc` `drawStar` `drawLastMoveRing` `getBoardPosition` `getConnect4Column` `resizeBoard` `updateStatus` `showCelebration` |
+| `ai.js` | 电脑走子（简单启发式） | `chooseAiMove` `chooseConnect4Move` `aiMove` `evaluatePoint` `evaluatePotentialFork` `findInstantWinMove` `scorePattern` |
 | `audio.js` | 声音合成 | `ensureAudioContext` `playSound` `playTone(At)` `playBgmLayers` `playBgmStep` `startBgm` `stopBgm` `restartBgm` |
 | `main.js` | 用户交互与生命周期 | `handleHumanMove` `undoMove` + 事件监听 + 初始化 |
 
@@ -85,24 +85,25 @@ graph LR
 
 ## 5. 核心数据模型
 
-- `board`：`BOARD_SIZE × BOARD_SIZE` 的二维数组，元素为 `EMPTY / BLACK / WHITE`。
+- `board`：`boardRows × boardCols` 的二维数组，元素为 `EMPTY / BLACK / WHITE`。
 - `moveHistory`：落子记录数组 `{ row, col, player }`，用于悔棋与回合推导。
 - `currentPlayer` / `stonesLeftThisTurn`：当前该谁落子、本回合还剩几子。
 
 ---
 
-## 6. 五子棋与六子棋的统一
+## 6. 三种棋的统一与差异
 
-两种棋**共用同一套核心**，仅由两个变量区分，无需分文件：
+三种棋**共用同一套核心**，主要由棋盘尺寸、`winLength` 与落子方式区分：
 
-| 维度 | 五子棋 | 六子棋 |
-|------|--------|--------|
-| `BOARD_SIZE` | 15×15 | 19×19 |
-| 星位 | 5 个（四角 + 中心） | 9 个（标准 hoshi） |
-| `winLength` | 5 | 6 |
-| 每回合子数 | 恒为 1 | 首手 1 子，其后每方每回合 2 子 |
+| 维度 | 五子棋 | 六子棋 | 四子棋 |
+|------|--------|--------|--------|
+| 棋盘 (`boardRows`×`boardCols`) | 15×15 | 19×19 | 6×7 |
+| 落子方式 | 交叉点任意落子 | 交叉点任意落子 | 选列、重力落底 |
+| 星位 | 5 个（四角 + 中心） | 9 个（标准 hoshi） | 无（填格棋盘） |
+| `winLength` | 5 | 6 | 4 |
+| 每回合子数 | 恒为 1 | 首手 1 子，其后每回合 2 子 | 恒为 1 |
 
-回合节奏由 `deriveTurnState(n)` 纯函数推导（`n` = 已落子数），返回 `{ player, stonesLeft }`。悔棋、切换、状态提示都基于它，避免手工维护回合计数出错。棋盘大小 `BOARD_SIZE` 与标题在 `resetGame()` 中随棋种同步更新。
+回合节奏由 `deriveTurnState(n)` 纯函数推导（`n` = 已落子数），返回 `{ player, stonesLeft }`。悔棋、切换、状态提示都基于它，避免手工维护回合计数出错。棋盘尺寸 `boardRows`/`boardCols`、`winLength` 与标题在 `resetGame()` 中随棋种同步更新。四子棋的落点由 `gravityDropRow(col)` 计算（该列最底部空格），胜负仍用通用的 `hasWin`。
 
 - 六子棋回合边界：黑起手在 `n = 0`，之后 2 子回合的黑方新回合在 `n = 3, 7, 11, …`。
 - `isFreshTurnStart(n)` 判断某点是否为“某方一个完整回合的起点”，供悔棋回退到玩家整回合之前。
@@ -151,9 +152,9 @@ sequenceDiagram
    - `centerBias`：靠中心加分。
    - 难度噪声：`difficultyConfig` 控制随机性与候选池大小（简单更随机，困难更稳）。
 
-六子棋下，AI 每回合的 2 子由 `aiMove()` **逐子链式**完成（每子间有短延时便于观察），每落一子后重新评估。
+六子棋下，AI 每回合的 2 子由 `aiMove()` **逐子链式**完成（每子间有短延时便于观察），每落一子后重新评估。四子棋由 `chooseConnect4Move()` 处理：只在每列的重力落点中选择，同样先做「能赢/必挡」判断，再按进攻/防守/居中打分。
 
-> 说明：即时拦截仅覆盖“单子致胜”。六子棋中需要两子完成的复杂威胁尚未处理，属后续增强点。
+> 说明：即时拦截仅覆盖“单子致胜”。六子棋中需要两子完成的复杂威胁、四子棋的多步陷阱尚未处理，属后续增强点。
 
 ---
 

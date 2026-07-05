@@ -20,19 +20,24 @@ function updateTurnStatus() {
 function drawBoard() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (let i = 1; i <= BOARD_SIZE; i += 1) {
+  if (gameType === "connect4") {
+    drawConnect4Board();
+    return;
+  }
+
+  for (let i = 1; i <= boardCols; i += 1) {
     const pos = i * cellSize;
     ctx.strokeStyle = "#8c5a26";
     ctx.lineWidth = 1.4;
 
     ctx.beginPath();
     ctx.moveTo(cellSize, pos);
-    ctx.lineTo(BOARD_SIZE * cellSize, pos);
+    ctx.lineTo(boardCols * cellSize, pos);
     ctx.stroke();
 
     ctx.beginPath();
     ctx.moveTo(pos, cellSize);
-    ctx.lineTo(pos, BOARD_SIZE * cellSize);
+    ctx.lineTo(pos, boardCols * cellSize);
     ctx.stroke();
   }
 
@@ -43,8 +48,8 @@ function drawBoard() {
     drawStar(r, c);
   }
 
-  for (let r = 0; r < BOARD_SIZE; r += 1) {
-    for (let c = 0; c < BOARD_SIZE; c += 1) {
+  for (let r = 0; r < boardRows; r += 1) {
+    for (let c = 0; c < boardCols; c += 1) {
       if (board[r][c] !== EMPTY) {
         drawStone(r, c, board[r][c]);
       }
@@ -59,7 +64,7 @@ function drawBoard() {
 }
 
 function getStarPoints() {
-  if (BOARD_SIZE === 19) {
+  if (boardCols === 19) {
     const lines = [3, 9, 15];
     const points = [];
     for (const r of lines) {
@@ -105,8 +110,10 @@ function drawStar(row, col) {
 function drawStone(row, col, player) {
   const x = (col + 1) * cellSize;
   const y = (row + 1) * cellSize;
-  const radius = cellSize * 0.43;
+  drawDisc(x, y, cellSize * 0.43, player);
+}
 
+function drawDisc(x, y, radius, player) {
   const gradient = ctx.createRadialGradient(
     x - radius * 0.35,
     y - radius * 0.4,
@@ -137,19 +144,19 @@ function drawStone(row, col, player) {
 }
 
 function drawLastMoveMarker(row, col) {
-  const x = (col + 1) * cellSize;
-  const y = (row + 1) * cellSize;
-  const radius = cellSize * 0.48;
+  drawLastMoveRing((col + 1) * cellSize, (row + 1) * cellSize, cellSize * 0.48);
+}
 
+function drawLastMoveRing(x, y, radius) {
   ctx.save();
   ctx.strokeStyle = "#ffeb3b";
-  ctx.lineWidth = Math.max(2, cellSize * 0.08);
+  ctx.lineWidth = Math.max(2, radius * 0.17);
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.strokeStyle = "#ff8a00";
-  ctx.lineWidth = Math.max(1.5, cellSize * 0.04);
+  ctx.lineWidth = Math.max(1.5, radius * 0.08);
   ctx.beginPath();
   ctx.moveTo(x - radius * 0.45, y);
   ctx.lineTo(x + radius * 0.45, y);
@@ -167,18 +174,83 @@ function getBoardPosition(event) {
   const col = Math.round(x / cellSize) - 1;
   const row = Math.round(y / cellSize) - 1;
 
-  if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) {
+  if (row < 0 || row >= boardRows || col < 0 || col >= boardCols) {
     return null;
   }
   return { row, col };
 }
 
+function connect4Geometry() {
+  const cell = Math.min(canvas.width / boardCols, canvas.height / boardRows);
+  const originX = (canvas.width - cell * boardCols) / 2;
+  const originY = (canvas.height - cell * boardRows) / 2;
+  return { cell, originX, originY };
+}
+
+function drawConnect4Board() {
+  const { cell, originX, originY } = connect4Geometry();
+
+  ctx.fillStyle = "#e0a95e";
+  ctx.fillRect(originX, originY, cell * boardCols, cell * boardRows);
+
+  for (let r = 0; r < boardRows; r += 1) {
+    for (let c = 0; c < boardCols; c += 1) {
+      const x = originX + (c + 0.5) * cell;
+      const y = originY + (r + 0.5) * cell;
+      const radius = cell * 0.4;
+      if (board[r][c] === EMPTY) {
+        ctx.fillStyle = "#fff8e9";
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#00000015";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else {
+        drawDisc(x, y, radius, board[r][c]);
+      }
+    }
+  }
+
+  if (blinkOn) {
+    for (const stone of getLastTurnStones()) {
+      const x = originX + (stone.col + 0.5) * cell;
+      const y = originY + (stone.row + 0.5) * cell;
+      drawLastMoveRing(x, y, cell * 0.44);
+    }
+  }
+}
+
+function getConnect4Column(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const x = (event.clientX - rect.left) * scaleX;
+  const { cell, originX } = connect4Geometry();
+  const col = Math.floor((x - originX) / cell);
+  if (col < 0 || col >= boardCols) {
+    return -1;
+  }
+  return col;
+}
+
 function resizeBoard() {
-  const base = BOARD_SIZE === 19 ? 660 : 540;
+  if (gameType === "connect4") {
+    const cell = 76;
+    canvas.width = boardCols * cell;
+    canvas.height = boardRows * cell;
+    canvas.style.width = `${canvas.width}px`;
+    canvas.style.aspectRatio = `${boardCols} / ${boardRows}`;
+    cellSize = cell;
+    drawBoard();
+    return;
+  }
+
+  const base = boardCols === 19 ? 660 : 540;
   canvas.width = base;
   canvas.height = base;
   canvas.style.width = `${base}px`;
-  cellSize = canvas.width / (BOARD_SIZE + 1);
+  canvas.style.aspectRatio = "1 / 1";
+  cellSize = canvas.width / (boardCols + 1);
   drawBoard();
 }
 

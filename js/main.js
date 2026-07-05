@@ -7,9 +7,22 @@ function handleHumanMove(event) {
     return;
   }
 
-  const pos = getBoardPosition(event);
-  if (!pos) {
-    return;
+  let pos;
+  if (gameType === "connect4") {
+    const col = getConnect4Column(event);
+    if (col < 0) {
+      return;
+    }
+    const row = gravityDropRow(col);
+    if (row < 0) {
+      return;
+    }
+    pos = { row, col };
+  } else {
+    pos = getBoardPosition(event);
+    if (!pos) {
+      return;
+    }
   }
 
   const mover = currentPlayer;

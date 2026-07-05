@@ -1,6 +1,10 @@
 function chooseAiMove() {
+  if (gameType === "connect4") {
+    return chooseConnect4Move();
+  }
+
   const config = difficultyConfig[difficulty] || difficultyConfig.normal;
-  const centerIndex = Math.floor(BOARD_SIZE / 2);
+  const centerIndex = Math.floor(boardCols / 2);
 
   const winMove = findInstantWinMove(WHITE);
   if (winMove) {
@@ -15,8 +19,8 @@ function chooseAiMove() {
   const candidates = [];
   const hasAnyMove = moveHistory.length > 0;
 
-  for (let r = 0; r < BOARD_SIZE; r += 1) {
-    for (let c = 0; c < BOARD_SIZE; c += 1) {
+  for (let r = 0; r < boardRows; r += 1) {
+    for (let c = 0; c < boardCols; c += 1) {
       if (board[r][c] !== EMPTY) {
         continue;
       }
@@ -29,7 +33,7 @@ function chooseAiMove() {
       const defense = evaluatePoint(r, c, BLACK);
       const forkAttack = evaluatePotentialFork(r, c, WHITE);
       const forkDefense = evaluatePotentialFork(r, c, BLACK);
-      const centerBias = (BOARD_SIZE - 1) - (Math.abs(centerIndex - r) + Math.abs(centerIndex - c));
+      const centerBias = (boardCols - 1) - (Math.abs(centerIndex - r) + Math.abs(centerIndex - c));
       const score =
         attack * config.attack +
         defense * config.defense +
@@ -40,6 +44,65 @@ function chooseAiMove() {
 
       candidates.push({ row: r, col: c, score });
     }
+  }
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+  const poolSize = Math.min(config.topPool, candidates.length);
+  const pickIndex = Math.floor(Math.random() * poolSize);
+  return candidates[pickIndex];
+}
+
+function chooseConnect4Move() {
+  const config = difficultyConfig[difficulty] || difficultyConfig.normal;
+  const centerCol = Math.floor(boardCols / 2);
+
+  // Immediate winning drop.
+  for (let c = 0; c < boardCols; c += 1) {
+    const r = gravityDropRow(c);
+    if (r < 0) {
+      continue;
+    }
+    board[r][c] = WHITE;
+    const wins = hasWin(r, c, WHITE);
+    board[r][c] = EMPTY;
+    if (wins) {
+      return { row: r, col: c };
+    }
+  }
+
+  // Block opponent's immediate winning drop.
+  for (let c = 0; c < boardCols; c += 1) {
+    const r = gravityDropRow(c);
+    if (r < 0) {
+      continue;
+    }
+    board[r][c] = BLACK;
+    const wins = hasWin(r, c, BLACK);
+    board[r][c] = EMPTY;
+    if (wins) {
+      return { row: r, col: c };
+    }
+  }
+
+  const candidates = [];
+  for (let c = 0; c < boardCols; c += 1) {
+    const r = gravityDropRow(c);
+    if (r < 0) {
+      continue;
+    }
+    const attack = evaluatePoint(r, c, WHITE);
+    const defense = evaluatePoint(r, c, BLACK);
+    const centerBias = (boardCols - Math.abs(centerCol - c)) * 2;
+    const score =
+      attack * config.attack +
+      defense * config.defense +
+      centerBias * config.center +
+      Math.random() * config.randomNoise;
+    candidates.push({ row: r, col: c, score });
   }
 
   if (candidates.length === 0) {
@@ -140,8 +203,8 @@ function hasNeighbor(row, col, distance) {
 }
 
 function findInstantWinMove(player) {
-  for (let r = 0; r < BOARD_SIZE; r += 1) {
-    for (let c = 0; c < BOARD_SIZE; c += 1) {
+  for (let r = 0; r < boardRows; r += 1) {
+    for (let c = 0; c < boardCols; c += 1) {
       if (board[r][c] !== EMPTY) {
         continue;
       }
