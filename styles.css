@@ -51,7 +51,7 @@ body {
   z-index: 1;
   animation: pop-in 500ms ease;
   display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(360px, 1fr) minmax(240px, 300px);
+  grid-template-columns: minmax(230px, 290px) minmax(340px, 1fr) minmax(260px, 340px);
   grid-template-areas:
     "topbar topbar topbar"
     "panel board tips";
