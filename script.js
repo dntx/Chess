@@ -35,55 +35,36 @@ let bgmStep = 0;
 let bgmStyle = "happy";
 let bgmVolumeValue = 0.36;
 
-const BGM_PATTERNS = {
+const BGM_SCORES = {
   happy: [
-    { freq: 392, ms: 260 },
-    { freq: 440, ms: 260 },
-    { freq: 523.25, ms: 320 },
-    { freq: 440, ms: 260 },
-    { freq: 392, ms: 260 },
-    { freq: 349.23, ms: 300 },
-    { freq: 329.63, ms: 320 },
-    { freq: 0, ms: 120 },
-    { freq: 349.23, ms: 250 },
-    { freq: 392, ms: 250 },
-    { freq: 440, ms: 320 },
-    { freq: 523.25, ms: 320 },
-    { freq: 440, ms: 260 },
-    { freq: 392, ms: 260 },
-    { freq: 349.23, ms: 280 },
-    { freq: 0, ms: 150 }
+    { ms: 300, lead: [659.25, 783.99], pad: [523.25, 659.25, 783.99], bass: 130.81 },
+    { ms: 300, lead: [698.46], pad: [523.25, 698.46, 783.99], bass: 146.83 },
+    { ms: 320, lead: [783.99, 880], pad: [587.33, 739.99, 880], bass: 146.83 },
+    { ms: 280, lead: [698.46], pad: [587.33, 698.46, 880], bass: 164.81 },
+    { ms: 300, lead: [659.25, 587.33], pad: [523.25, 659.25, 783.99], bass: 130.81 },
+    { ms: 300, lead: [523.25], pad: [440, 554.37, 659.25], bass: 110 },
+    { ms: 320, lead: [587.33, 659.25], pad: [493.88, 587.33, 739.99], bass: 123.47 },
+    { ms: 260, lead: [523.25], pad: [392, 523.25, 659.25], bass: 98 }
   ],
   calm: [
-    { freq: 293.66, ms: 360 },
-    { freq: 329.63, ms: 360 },
-    { freq: 392, ms: 440 },
-    { freq: 329.63, ms: 340 },
-    { freq: 293.66, ms: 360 },
-    { freq: 261.63, ms: 440 },
-    { freq: 0, ms: 180 },
-    { freq: 261.63, ms: 360 },
-    { freq: 293.66, ms: 360 },
-    { freq: 349.23, ms: 420 },
-    { freq: 392, ms: 440 },
-    { freq: 349.23, ms: 360 },
-    { freq: 293.66, ms: 360 },
-    { freq: 261.63, ms: 420 },
-    { freq: 0, ms: 200 }
+    { ms: 420, lead: [523.25], pad: [392, 493.88, 587.33], bass: 98 },
+    { ms: 420, lead: [587.33], pad: [440, 554.37, 659.25], bass: 110 },
+    { ms: 460, lead: [659.25], pad: [493.88, 587.33, 739.99], bass: 123.47 },
+    { ms: 420, lead: [587.33], pad: [440, 554.37, 659.25], bass: 110 },
+    { ms: 440, lead: [523.25], pad: [392, 493.88, 587.33], bass: 98 },
+    { ms: 480, lead: [493.88], pad: [349.23, 440, 523.25], bass: 87.31 },
+    { ms: 420, lead: [440], pad: [329.63, 440, 523.25], bass: 82.41 },
+    { ms: 500, lead: [392], pad: [293.66, 392, 493.88], bass: 73.42 }
   ],
   tense: [
-    { freq: 329.63, ms: 180 },
-    { freq: 392, ms: 180 },
-    { freq: 415.3, ms: 180 },
-    { freq: 392, ms: 180 },
-    { freq: 329.63, ms: 180 },
-    { freq: 293.66, ms: 220 },
-    { freq: 329.63, ms: 180 },
-    { freq: 392, ms: 180 },
-    { freq: 466.16, ms: 180 },
-    { freq: 392, ms: 180 },
-    { freq: 329.63, ms: 220 },
-    { freq: 0, ms: 120 }
+    { ms: 220, lead: [659.25, 783.99], pad: [523.25, 622.25], bass: 130.81 },
+    { ms: 220, lead: [622.25], pad: [493.88, 622.25], bass: 123.47 },
+    { ms: 240, lead: [587.33, 698.46], pad: [466.16, 587.33], bass: 116.54 },
+    { ms: 220, lead: [554.37], pad: [440, 554.37], bass: 110 },
+    { ms: 220, lead: [659.25, 783.99], pad: [523.25, 622.25], bass: 130.81 },
+    { ms: 220, lead: [622.25], pad: [493.88, 622.25], bass: 123.47 },
+    { ms: 240, lead: [698.46, 830.61], pad: [466.16, 698.46], bass: 116.54 },
+    { ms: 220, lead: [587.33], pad: [415.3, 587.33], bass: 103.83 }
   ]
 };
 
@@ -162,13 +143,17 @@ function drawBoard() {
     ctx.stroke();
   }
 
-  // Star points make board reading easier.
-  const stars = [3, 7, 11];
+  // Star points: four corners plus the center only.
+  const starPoints = [
+    [3, 3],
+    [3, 11],
+    [11, 3],
+    [11, 11],
+    [7, 7]
+  ];
   ctx.fillStyle = "#7a471a";
-  for (const r of stars) {
-    for (const c of stars) {
-      drawStar(r, c);
-    }
+  for (const [r, c] of starPoints) {
+    drawStar(r, c);
   }
 
   for (let r = 0; r < BOARD_SIZE; r += 1) {
@@ -742,17 +727,69 @@ function playTone(freq, durationMs, gainValue, type = "sine") {
   osc.stop(now + durationMs / 1000 + 0.03);
 }
 
+function playToneAt(freq, durationMs, gainValue, type, offsetMs) {
+  const ctxAudio = ensureAudioContext();
+  if (!ctxAudio || !freq) {
+    return;
+  }
+
+  const start = ctxAudio.currentTime + offsetMs / 1000;
+  const osc = ctxAudio.createOscillator();
+  const gain = ctxAudio.createGain();
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, start);
+
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(gainValue, start + 0.02);
+  gain.gain.linearRampToValueAtTime(gainValue * 0.78, start + durationMs / 1000 * 0.55);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + durationMs / 1000);
+
+  osc.connect(gain);
+  gain.connect(ctxAudio.destination);
+  osc.start(start);
+  osc.stop(start + durationMs / 1000 + 0.04);
+}
+
+function playBgmLayers(step) {
+  const masterGain = 0.003 + bgmVolumeValue * 0.022;
+  const leadType = bgmStyle === "tense" ? "sawtooth" : "triangle";
+  const padType = bgmStyle === "calm" ? "sine" : "triangle";
+
+  if (step.pad) {
+    step.pad.forEach((freq) => {
+      playToneAt(freq, step.ms * 0.95, masterGain * 0.52, padType, 0);
+    });
+  }
+
+  if (step.bass) {
+    playToneAt(step.bass, step.ms * 0.88, masterGain * 0.72, "triangle", 0);
+  }
+
+  if (step.lead) {
+    step.lead.forEach((freq, index) => {
+      playToneAt(
+        freq,
+        step.ms * (index === 0 ? 0.72 : 0.46),
+        masterGain * (index === 0 ? 1.05 : 0.8),
+        leadType,
+        index * Math.max(65, step.ms * 0.24)
+      );
+    });
+  }
+}
+
 function playBgmStep() {
   if (!bgmToggle.checked) {
     stopBgm();
     return;
   }
 
-  const pattern = BGM_PATTERNS[bgmStyle] || BGM_PATTERNS.happy;
-  const note = pattern[bgmStep % pattern.length];
+  const score = BGM_SCORES[bgmStyle] || BGM_SCORES.happy;
+  const note = score[bgmStep % score.length];
   bgmStep += 1;
 
-  playTone(note.freq, note.ms, 0.006 + bgmVolumeValue * 0.024, "triangle");
+  playBgmLayers(note);
 
   bgmTimerId = setTimeout(() => {
     bgmTimerId = null;
