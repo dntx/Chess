@@ -35,23 +35,29 @@ function resetGame() {
     clearTimeout(aiTimerId);
     aiTimerId = null;
   }
+  mode = modeSelect.value;
+  difficulty = difficultySelect.value;
+  gameType = gameTypeSelect.value;
+  BOARD_SIZE = gameType === "connect6" ? 19 : 15;
+  winLength = gameType === "connect6" ? 6 : 5;
   board = createBoard();
   gameOver = false;
   blinkOn = true;
   moveHistory = [];
-  lastMove = null;
-  mode = modeSelect.value;
-  difficulty = difficultySelect.value;
-  gameType = gameTypeSelect.value;
-  winLength = gameType === "connect6" ? 6 : 5;
   syncTurnState();
+
+  const title = gameType === "connect6" ? "森林小熊六子棋" : "森林小熊五子棋";
+  gameTitle.textContent = title;
+  document.title = title;
+  canvas.setAttribute("aria-label", `${title}棋盘`);
+
   hideCelebration();
   updateStatus(
     gameType === "connect6"
-      ? "六子棋：黑棋先手，第一手只下 1 子"
+      ? "六子棋：黑棋先手，第一手只下 1 子，之后每回合下 2 子"
       : "黑棋先手，开始吧！"
   );
-  drawBoard();
+  resizeBoard();
 }
 
 function placeStone(row, col, player) {
@@ -60,7 +66,6 @@ function placeStone(row, col, player) {
   }
   board[row][col] = player;
   moveHistory.push({ row, col, player });
-  lastMove = { row, col, player };
   playSound("place", player);
   drawBoard();
   return true;
