@@ -33,10 +33,6 @@ function playSound(kind, player) {
     freq = 290;
     duration = 0.075;
     gainValue = 0.045;
-  } else if (kind === "win") {
-    freq = 720;
-    duration = 0.16;
-    gainValue = 0.06;
   } else if (kind === "draw") {
     freq = 540;
     duration = 0.1;
@@ -57,6 +53,26 @@ function playSound(kind, player) {
   gain.connect(ctxAudio.destination);
   osc.start(now);
   osc.stop(now + duration + 0.02);
+}
+
+function playWinFanfare() {
+  if (!soundToggle.checked) {
+    return;
+  }
+  if (!ensureAudioContext()) {
+    return;
+  }
+
+  // Bright ascending arpeggio, then a sustained major chord flourish.
+  const arpeggio = [523.25, 659.25, 783.99, 1046.5];
+  arpeggio.forEach((freq, index) => {
+    playToneAt(freq, 160, 0.07, "triangle", index * 110);
+  });
+
+  const finalChord = [523.25, 659.25, 783.99, 1046.5];
+  finalChord.forEach((freq) => {
+    playToneAt(freq, 780, 0.05, "triangle", 470);
+  });
 }
 
 function playTone(freq, durationMs, gainValue, type = "sine") {

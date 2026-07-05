@@ -127,7 +127,7 @@ function finishIfEnded(row, col, player) {
   if (hasWin(row, col, player)) {
     gameOver = true;
     const winnerText = player === BLACK ? "黑棋" : "白棋";
-    playSound("win");
+    playWinFanfare();
     showCelebration(`${winnerText}胜利啦！`);
     updateStatus(`${winnerText}获胜！太棒啦！`);
     return true;
