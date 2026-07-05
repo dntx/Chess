@@ -6,6 +6,7 @@ const WHITE = 2;
 const canvas = document.getElementById("boardCanvas");
 const ctx = canvas.getContext("2d");
 const modeSelect = document.getElementById("modeSelect");
+const gameTypeSelect = document.getElementById("gameTypeSelect");
 const difficultySelect = document.getElementById("difficultySelect");
 const undoBtn = document.getElementById("undoBtn");
 const resetBtn = document.getElementById("resetBtn");
@@ -24,6 +25,9 @@ let currentPlayer = BLACK;
 let gameOver = false;
 let mode = modeSelect.value;
 let difficulty = difficultySelect.value;
+let gameType = gameTypeSelect.value;
+let winLength = gameType === "connect6" ? 6 : 5;
+let stonesLeftThisTurn = 1;
 let cellSize = canvas.width / (BOARD_SIZE + 1);
 let moveHistory = [];
 let lastMove = null;
@@ -128,6 +132,44 @@ const BGM_SCORES = {
     { ms: 200, lead: [783.99], pad: [174.61, 261.63], bass: 87.31 },
     { ms: 220, lead: [659.25], pad: [196.0, 246.94], bass: 98.0 },
     { ms: 300, lead: [880.0], pad: [220.0, 261.63, 329.63], bass: 110.0 }
+  ],
+  eerie: [
+    { ms: 460, lead: [659.25], pad: [329.63, 466.16], bass: 82.41 },
+    { ms: 460, lead: [739.99], pad: [369.99, 523.25], bass: 92.5 },
+    { ms: 500, lead: [830.61], pad: [415.3, 587.33], bass: 103.83 },
+    { ms: 460, lead: [739.99], pad: [369.99, 523.25], bass: 92.5 },
+    { ms: 460, lead: [659.25], pad: [329.63, 466.16], bass: 82.41 },
+    { ms: 500, lead: [587.33], pad: [293.66, 415.3], bass: 73.42 },
+    { ms: 540, lead: [523.25], pad: [261.63, 369.99], bass: 65.41 },
+    { ms: 520, lead: [], pad: [261.63, 369.99], bass: 65.41 },
+
+    { ms: 460, lead: [830.61], pad: [415.3, 587.33], bass: 103.83 },
+    { ms: 460, lead: [932.33], pad: [466.16, 659.25], bass: 116.54 },
+    { ms: 500, lead: [830.61], pad: [415.3, 587.33], bass: 103.83 },
+    { ms: 460, lead: [739.99], pad: [369.99, 523.25], bass: 92.5 },
+    { ms: 480, lead: [659.25], pad: [329.63, 466.16], bass: 82.41 },
+    { ms: 520, lead: [587.33], pad: [293.66, 415.3], bass: 73.42 },
+    { ms: 600, lead: [523.25], pad: [261.63, 369.99], bass: 65.41 },
+    { ms: 560, lead: [], pad: [261.63, 369.99, 466.16], bass: 65.41 }
+  ],
+  horror: [
+    { ms: 620, lead: [], pad: [110.0, 116.54], bass: 55.0 },
+    { ms: 600, lead: [466.16], pad: [110.0, 155.56], bass: 55.0 },
+    { ms: 300, lead: [932.33], pad: [110.0, 155.56], bass: 55.0 },
+    { ms: 300, lead: [880.0], pad: [110.0, 155.56], bass: 55.0 },
+    { ms: 620, lead: [], pad: [116.54, 123.47], bass: 58.27 },
+    { ms: 600, lead: [622.25], pad: [116.54, 174.61], bass: 58.27 },
+    { ms: 320, lead: [987.77], pad: [116.54, 174.61], bass: 58.27 },
+    { ms: 520, lead: [932.33], pad: [116.54, 174.61], bass: 58.27 },
+
+    { ms: 640, lead: [], pad: [98.0, 103.83], bass: 49.0 },
+    { ms: 600, lead: [415.3], pad: [98.0, 138.59], bass: 49.0 },
+    { ms: 300, lead: [830.61], pad: [98.0, 138.59], bass: 49.0 },
+    { ms: 300, lead: [783.99], pad: [98.0, 138.59], bass: 49.0 },
+    { ms: 620, lead: [], pad: [87.31, 92.5], bass: 43.65 },
+    { ms: 560, lead: [698.46], pad: [87.31, 123.47], bass: 43.65 },
+    { ms: 360, lead: [880.0], pad: [87.31, 123.47], bass: 43.65 },
+    { ms: 700, lead: [466.16], pad: [82.41, 87.31, 116.54], bass: 41.2 }
   ]
 };
 
@@ -163,22 +205,69 @@ function createBoard() {
   return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(EMPTY));
 }
 
+function deriveTurnState(n) {
+  if (gameType !== "connect6") {
+    return { player: n % 2 === 0 ? BLACK : WHITE, stonesLeft: 1 };
+  }
+  if (n === 0) {
+    return { player: BLACK, stonesLeft: 1 };
+  }
+  const r = n - 1;
+  const turnIndexAfterFirst = Math.floor(r / 2);
+  const posInTurn = r % 2;
+  const player = turnIndexAfterFirst % 2 === 0 ? WHITE : BLACK;
+  return { player, stonesLeft: 2 - posInTurn };
+}
+
+function isFreshTurnStart(n) {
+  if (n === 0) {
+    return true;
+  }
+  const fullSize = gameType === "connect6" ? 2 : 1;
+  return deriveTurnState(n).stonesLeft === fullSize;
+}
+
+function syncTurnState() {
+  const state = deriveTurnState(moveHistory.length);
+  currentPlayer = state.player;
+  stonesLeftThisTurn = state.stonesLeft;
+}
+
 function resetGame() {
   if (aiTimerId) {
     clearTimeout(aiTimerId);
     aiTimerId = null;
   }
   board = createBoard();
-  currentPlayer = BLACK;
   gameOver = false;
   blinkOn = true;
   moveHistory = [];
   lastMove = null;
   mode = modeSelect.value;
   difficulty = difficultySelect.value;
+  gameType = gameTypeSelect.value;
+  winLength = gameType === "connect6" ? 6 : 5;
+  syncTurnState();
   hideCelebration();
-  updateStatus("黑棋先手，开始吧！");
+  updateStatus(
+    gameType === "connect6"
+      ? "六子棋：黑棋先手，第一手只下 1 子"
+      : "黑棋先手，开始吧！"
+  );
   drawBoard();
+}
+
+function updateTurnStatus() {
+  if (gameOver) {
+    return;
+  }
+  const who = currentPlayer === BLACK ? "黑棋" : "白棋";
+  const budgetNote = stonesLeftThisTurn > 1 ? `（本回合 ${stonesLeftThisTurn} 子）` : "";
+  if (mode === "pve" && currentPlayer === BLACK) {
+    updateStatus(`轮到你啦（黑棋）${budgetNote}`);
+  } else {
+    updateStatus(`轮到${who}${budgetNote}`);
+  }
 }
 
 function updateStatus(text) {
@@ -323,7 +412,7 @@ function placeStone(row, col, player) {
   return true;
 }
 
-function hasFive(row, col, player) {
+function hasWin(row, col, player) {
   const dirs = [
     [1, 0],
     [0, 1],
@@ -335,7 +424,7 @@ function hasFive(row, col, player) {
     let count = 1;
     count += countOneDirection(row, col, dr, dc, player);
     count += countOneDirection(row, col, -dr, -dc, player);
-    if (count >= 5) {
+    if (count >= winLength) {
       return true;
     }
   }
@@ -371,12 +460,8 @@ function isBoardFull() {
   return true;
 }
 
-function switchPlayer() {
-  currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
-}
-
 function finishIfEnded(row, col, player) {
-  if (hasFive(row, col, player)) {
+  if (hasWin(row, col, player)) {
     gameOver = true;
     const winnerText = player === BLACK ? "黑棋" : "白棋";
     playSound("win");
@@ -408,53 +493,44 @@ function handleHumanMove(event) {
     return;
   }
 
-  if (!placeStone(pos.row, pos.col, currentPlayer)) {
+  const mover = currentPlayer;
+  if (!placeStone(pos.row, pos.col, mover)) {
     return;
   }
 
-  if (finishIfEnded(pos.row, pos.col, currentPlayer)) {
+  if (finishIfEnded(pos.row, pos.col, mover)) {
     return;
   }
 
-  switchPlayer();
+  syncTurnState();
 
-  if (mode === "pve") {
+  if (currentPlayer === mover) {
+    updateStatus(`${mover === BLACK ? "黑棋" : "白棋"}还需落子 ${stonesLeftThisTurn} 子`);
+    return;
+  }
+
+  if (mode === "pve" && currentPlayer === WHITE) {
     updateStatus("电脑正在思考...");
     aiTimerId = setTimeout(() => {
       aiTimerId = null;
       aiMove();
-    }, 260);
+    }, 300);
   } else {
-    updateStatus(currentPlayer === BLACK ? "轮到黑棋" : "轮到白棋");
+    updateTurnStatus();
   }
 }
 
-function aiMove() {
-  if (gameOver || currentPlayer !== WHITE) {
-    return;
-  }
-
+function chooseAiMove() {
   const config = difficultyConfig[difficulty] || difficultyConfig.normal;
+
   const winMove = findInstantWinMove(WHITE);
   if (winMove) {
-    placeStone(winMove.row, winMove.col, WHITE);
-    if (finishIfEnded(winMove.row, winMove.col, WHITE)) {
-      return;
-    }
-    switchPlayer();
-    updateStatus("轮到你啦（黑棋）");
-    return;
+    return winMove;
   }
 
   const blockMove = findInstantWinMove(BLACK);
   if (blockMove) {
-    placeStone(blockMove.row, blockMove.col, WHITE);
-    if (finishIfEnded(blockMove.row, blockMove.col, WHITE)) {
-      return;
-    }
-    switchPlayer();
-    updateStatus("轮到你啦（黑棋）");
-    return;
+    return blockMove;
   }
 
   const candidates = [];
@@ -488,22 +564,42 @@ function aiMove() {
   }
 
   if (candidates.length === 0) {
-    return;
+    return null;
   }
 
   candidates.sort((a, b) => b.score - a.score);
   const poolSize = Math.min(config.topPool, candidates.length);
   const pickIndex = Math.floor(Math.random() * poolSize);
-  const bestMove = candidates[pickIndex];
+  return candidates[pickIndex];
+}
 
-  placeStone(bestMove.row, bestMove.col, WHITE);
-
-  if (finishIfEnded(bestMove.row, bestMove.col, WHITE)) {
+function aiMove() {
+  if (gameOver || currentPlayer !== WHITE) {
     return;
   }
 
-  switchPlayer();
-  updateStatus("轮到你啦（黑棋）");
+  const move = chooseAiMove();
+  if (!move) {
+    return;
+  }
+
+  placeStone(move.row, move.col, WHITE);
+
+  if (finishIfEnded(move.row, move.col, WHITE)) {
+    return;
+  }
+
+  syncTurnState();
+
+  if (currentPlayer === WHITE) {
+    updateStatus("电脑落子中...");
+    aiTimerId = setTimeout(() => {
+      aiTimerId = null;
+      aiMove();
+    }, 320);
+  } else {
+    updateTurnStatus();
+  }
 }
 
 function evaluatePoint(row, col, player) {
@@ -571,7 +667,7 @@ function findInstantWinMove(player) {
         continue;
       }
       board[r][c] = player;
-      const wins = hasFive(r, c, player);
+      const wins = hasWin(r, c, player);
       board[r][c] = EMPTY;
       if (wins) {
         return { row: r, col: c };
@@ -680,35 +776,29 @@ function undoMove() {
     aiTimerId = null;
   }
 
-  gameOver = false;
-
   if (mode === "pvp") {
     const move = moveHistory.pop();
     board[move.row][move.col] = EMPTY;
-    currentPlayer = move.player;
-  } else if (currentPlayer === WHITE) {
-    const move = moveHistory.pop();
-    board[move.row][move.col] = EMPTY;
-    currentPlayer = BLACK;
   } else {
-    const aiMoveItem = moveHistory.pop();
-    board[aiMoveItem.row][aiMoveItem.col] = EMPTY;
-
-    if (moveHistory.length > 0) {
-      const humanMoveItem = moveHistory.pop();
-      board[humanMoveItem.row][humanMoveItem.col] = EMPTY;
-    }
-    currentPlayer = BLACK;
+    do {
+      const move = moveHistory.pop();
+      board[move.row][move.col] = EMPTY;
+    } while (
+      moveHistory.length > 0 &&
+      !(deriveTurnState(moveHistory.length).player === BLACK && isFreshTurnStart(moveHistory.length))
+    );
   }
 
+  syncTurnState();
   lastMove = moveHistory.length > 0 ? moveHistory[moveHistory.length - 1] : null;
   playSound("undo");
   drawBoard();
 
+  const budgetNote = stonesLeftThisTurn > 1 ? `（本回合 ${stonesLeftThisTurn} 子）` : "";
   if (mode === "pvp") {
-    updateStatus(currentPlayer === BLACK ? "已悔棋，轮到黑棋" : "已悔棋，轮到白棋");
+    updateStatus(`已悔棋，${currentPlayer === BLACK ? "轮到黑棋" : "轮到白棋"}${budgetNote}`);
   } else {
-    updateStatus("已悔棋，轮到你啦（黑棋）");
+    updateStatus(`已悔棋，轮到你啦（黑棋）${budgetNote}`);
   }
 }
 
@@ -821,8 +911,8 @@ function playToneAt(freq, durationMs, gainValue, type, offsetMs) {
 
 function playBgmLayers(step) {
   const masterGain = 0.003 + bgmVolumeValue * 0.022;
-  const leadType = bgmStyle === "tense" ? "sawtooth" : "triangle";
-  const padType = bgmStyle === "calm" ? "sine" : "triangle";
+  const leadType = bgmStyle === "tense" || bgmStyle === "horror" ? "sawtooth" : "triangle";
+  const padType = bgmStyle === "calm" || bgmStyle === "eerie" ? "sine" : "triangle";
 
   if (step.pad) {
     step.pad.forEach((freq) => {
@@ -939,6 +1029,7 @@ undoBtn.addEventListener("click", () => {
 });
 resetBtn.addEventListener("click", resetGame);
 modeSelect.addEventListener("change", resetGame);
+gameTypeSelect.addEventListener("change", resetGame);
 difficultySelect.addEventListener("change", () => {
   difficulty = difficultySelect.value;
   if (mode === "pve") {
@@ -976,4 +1067,11 @@ window.addEventListener("resize", resizeBoard);
 resizeBoard();
 bgmStyle = bgmStyleSelect.value;
 bgmVolumeValue = Number(bgmVolume.value) / 100;
-updateStatus("黑棋先手，开始吧！");
+gameType = gameTypeSelect.value;
+winLength = gameType === "connect6" ? 6 : 5;
+syncTurnState();
+updateStatus(
+  gameType === "connect6"
+    ? "六子棋：黑棋先手，第一手只下 1 子"
+    : "黑棋先手，开始吧！"
+);
