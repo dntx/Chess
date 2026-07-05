@@ -4,7 +4,7 @@ function chooseAiMove() {
   }
 
   // 三子棋（3x3 连 3）是已解游戏：双方最优必和。困难难度用极小化极大搜索完整
-  // 博弈树，做到永不失误——电脑后手，人类最好的结果只能逼平（想赢只能靠电脑失误）。
+  // 博弈树，做到永不失误——无论先后手电脑都不会输，人类最好的结果只能逼平（想赢只能靠电脑失误）。
   if (gameType === "tictactoe" && difficulty === "hard") {
     const optimal = chooseTicTacToeOptimalMove();
     if (optimal) {
@@ -20,41 +20,41 @@ function chooseAiMove() {
   //   普通：必抢自己的一步杀、必堵对手一步杀（连四等），但不处理活三这类两步杀。
   //   困难：再加抢攻(活四/双威胁)与堵活三(twoStepKill)。
   // 注：自己/对手的“一子致胜”始终处理（下方 findInstantWinMove，属基线而非技能）。
-  const winMove = findInstantWinMove(WHITE);
+  const winMove = findInstantWinMove(aiColor);
   if (winMove) {
     return winMove;
   }
 
   if (config.ownWinChance >= 1 || Math.random() < config.ownWinChance) {
     // 本回合多子成杀（六子棋连四补 2 子成 6）——优先于堵：我们这回合先赢。
-    const multiStoneWin = findMultiStoneWinMove(WHITE);
+    const multiStoneWin = findMultiStoneWinMove(aiColor);
     if (multiStoneWin) {
       return multiStoneWin;
     }
   }
 
-  const blockMove = findInstantWinMove(BLACK);
+  const blockMove = findInstantWinMove(humanColor);
   if (blockMove) {
     return blockMove;
   }
 
   if (config.blockKillChance >= 1 || Math.random() < config.blockKillChance) {
-    const humanThreats = findThreats().filter((t) => t.player === BLACK);
+    const humanThreats = findThreats().filter((t) => t.player === humanColor);
 
     // 一步杀：对手下一回合就能赢的棋型（冲四、六子棋连四）。
-    const criticalBlock = blockBestThreatCell(humanThreats.filter((t) => t.level === "critical"), BLACK);
+    const criticalBlock = blockBestThreatCell(humanThreats.filter((t) => t.level === "critical"), humanColor);
     if (criticalBlock) {
       return criticalBlock;
     }
 
     if (config.twoStepKill) {
       // 抢攻不过度堵：能造出对手一回合堵不完的必胜（活三走成活四 等）就先抢自己的。
-      const forcedWin = findForcedWinMove(WHITE);
+      const forcedWin = findForcedWinMove(aiColor);
       if (forcedWin) {
         return forcedWin;
       }
       // 否则堵对手的活三（两步杀），以免对手白拿一个活四。
-      const dangerBlock = blockBestThreatCell(humanThreats.filter((t) => t.level === "danger"), BLACK);
+      const dangerBlock = blockBestThreatCell(humanThreats.filter((t) => t.level === "danger"), humanColor);
       if (dangerBlock) {
         return dangerBlock;
       }
@@ -74,10 +74,10 @@ function chooseAiMove() {
         continue;
       }
 
-      const attack = evaluatePoint(r, c, WHITE);
-      const defense = evaluatePoint(r, c, BLACK);
-      const forkAttack = evaluatePotentialFork(r, c, WHITE);
-      const forkDefense = evaluatePotentialFork(r, c, BLACK);
+      const attack = evaluatePoint(r, c, aiColor);
+      const defense = evaluatePoint(r, c, humanColor);
+      const forkAttack = evaluatePotentialFork(r, c, aiColor);
+      const forkDefense = evaluatePotentialFork(r, c, humanColor);
       const centerBias = (boardCols - 1) - (Math.abs(centerIndex - r) + Math.abs(centerIndex - c));
       const score =
         attack * config.attack +
@@ -111,8 +111,8 @@ function chooseConnect4Move() {
     if (r < 0) {
       continue;
     }
-    board[r][c] = WHITE;
-    const wins = hasWin(r, c, WHITE);
+    board[r][c] = aiColor;
+    const wins = hasWin(r, c, aiColor);
     board[r][c] = EMPTY;
     if (wins) {
       return { row: r, col: c };
@@ -125,8 +125,8 @@ function chooseConnect4Move() {
     if (r < 0) {
       continue;
     }
-    board[r][c] = BLACK;
-    const wins = hasWin(r, c, BLACK);
+    board[r][c] = humanColor;
+    const wins = hasWin(r, c, humanColor);
     board[r][c] = EMPTY;
     if (wins) {
       return { row: r, col: c };
@@ -136,7 +136,7 @@ function chooseConnect4Move() {
   // Force a win via a double threat: a drop that creates two winning drops at once
   // (the opponent can only block one). Only the hard difficulty plays this actively.
   if (config.twoStepKill) {
-    const forcedWin = findForcedWinMove(WHITE);
+    const forcedWin = findForcedWinMove(aiColor);
     if (forcedWin) {
       return forcedWin;
     }
@@ -148,8 +148,8 @@ function chooseConnect4Move() {
     if (r < 0) {
       continue;
     }
-    const attack = evaluatePoint(r, c, WHITE);
-    const defense = evaluatePoint(r, c, BLACK);
+    const attack = evaluatePoint(r, c, aiColor);
+    const defense = evaluatePoint(r, c, humanColor);
     const centerBias = (boardCols - Math.abs(centerCol - c)) * 2;
     const score =
       attack * config.attack +
@@ -170,7 +170,7 @@ function chooseConnect4Move() {
 }
 
 // 三子棋专用最优走法（困难难度）。3x3 连 3 的博弈树极小，直接极小化极大全搜索：
-// 电脑（WHITE，后手）在任何局面下都至少能逼平，对手一旦失误就会被抓住并取胜。
+// 电脑（无论执黑执白）在任何局面下都至少能逼平，对手一旦失误就会被抓住并取胜。
 function chooseTicTacToeOptimalMove() {
   const empties = listEmptyCells();
   if (empties.length === 0) {
@@ -180,10 +180,10 @@ function chooseTicTacToeOptimalMove() {
   let bestScore = -Infinity;
   const bestMoves = [];
   for (const cell of empties) {
-    board[cell.row][cell.col] = WHITE;
-    const score = hasWin(cell.row, cell.col, WHITE)
+    board[cell.row][cell.col] = aiColor;
+    const score = hasWin(cell.row, cell.col, aiColor)
       ? 10
-      : minimaxTicTacToe(BLACK, 1);
+      : minimaxTicTacToe(humanColor, 1);
     board[cell.row][cell.col] = EMPTY;
     if (score > bestScore) {
       bestScore = score;
@@ -198,7 +198,7 @@ function chooseTicTacToeOptimalMove() {
   return bestMoves[Math.floor(Math.random() * bestMoves.length)];
 }
 
-// 从“轮到 player 落子”的局面递归求最优分值（站在电脑 WHITE 视角）：
+// 从“轮到 player 落子”的局面递归求最优分值（站在电脑视角）：
 // 电脑获胜 = 10 - 步数（越快赢越好），电脑落败 = 步数 - 10（越晚输越好），平局 = 0。
 function minimaxTicTacToe(player, depth) {
   const empties = listEmptyCells();
@@ -206,13 +206,13 @@ function minimaxTicTacToe(player, depth) {
     return 0;
   }
 
-  if (player === WHITE) {
+  if (player === aiColor) {
     let best = -Infinity;
     for (const cell of empties) {
-      board[cell.row][cell.col] = WHITE;
-      const score = hasWin(cell.row, cell.col, WHITE)
+      board[cell.row][cell.col] = aiColor;
+      const score = hasWin(cell.row, cell.col, aiColor)
         ? 10 - depth
-        : minimaxTicTacToe(BLACK, depth + 1);
+        : minimaxTicTacToe(humanColor, depth + 1);
       board[cell.row][cell.col] = EMPTY;
       if (score > best) {
         best = score;
@@ -223,10 +223,10 @@ function minimaxTicTacToe(player, depth) {
 
   let best = Infinity;
   for (const cell of empties) {
-    board[cell.row][cell.col] = BLACK;
-    const score = hasWin(cell.row, cell.col, BLACK)
+    board[cell.row][cell.col] = humanColor;
+    const score = hasWin(cell.row, cell.col, humanColor)
       ? depth - 10
-      : minimaxTicTacToe(WHITE, depth + 1);
+      : minimaxTicTacToe(aiColor, depth + 1);
     board[cell.row][cell.col] = EMPTY;
     if (score < best) {
       best = score;
@@ -248,7 +248,7 @@ function listEmptyCells() {
 }
 
 function aiMove() {
-  if (gameOver || currentPlayer !== WHITE) {
+  if (gameOver || currentPlayer !== aiColor) {
     return;
   }
 
@@ -257,15 +257,15 @@ function aiMove() {
     return;
   }
 
-  placeStone(move.row, move.col, WHITE);
+  placeStone(move.row, move.col, aiColor);
 
-  if (finishIfEnded(move.row, move.col, WHITE)) {
+  if (finishIfEnded(move.row, move.col, aiColor)) {
     return;
   }
 
   syncTurnState();
 
-  if (currentPlayer === WHITE) {
+  if (currentPlayer === aiColor) {
     updateStatus("电脑落子中...");
     aiTimerId = setTimeout(() => {
       aiTimerId = null;

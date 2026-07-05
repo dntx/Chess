@@ -10,11 +10,15 @@ function updateTurnStatus() {
   }
   const who = currentPlayer === BLACK ? "黑棋" : "白棋";
   const budgetNote = stonesLeftThisTurn > 1 ? `（本回合 ${stonesLeftThisTurn} 子）` : "";
-  if (mode === "pve" && currentPlayer === BLACK) {
-    updateStatus(`轮到你啦（黑棋）${budgetNote}`);
+  if (mode === "pve" && currentPlayer === humanColor) {
+    updateStatus(`轮到你啦（${humanColor === BLACK ? "黑棋" : "白棋"}）${budgetNote}`);
   } else {
     updateStatus(`轮到${who}${budgetNote}`);
   }
+}
+
+function refreshStartOverlay() {
+  startOverlay.classList.toggle("hidden", !awaitingAiStart);
 }
 
 function drawBoard() {
