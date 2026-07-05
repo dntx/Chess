@@ -98,6 +98,31 @@ body {
   flex-wrap: wrap;
 }
 
+.sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e9fbd8;
+  padding: 7px 10px;
+  border: 2px solid #b5de8c;
+  border-radius: 10px;
+}
+
+.sound-toggle input {
+  margin: 0;
+}
+
+.board-size-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #fff3bf;
+  border: 2px solid #e1c26f;
+  color: #6b4a22;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-weight: 700;
+}
+
 label {
   font-weight: 700;
 }
@@ -152,8 +177,8 @@ button:hover {
 }
 
 #boardCanvas {
-  width: min(94vw, 620px);
-  height: min(94vw, 620px);
+  width: min(90vw, 540px);
+  height: min(90vw, 540px);
   background:
     linear-gradient(135deg, #e9c07a 0%, #d5a45f 100%);
   border: 8px solid var(--wood-dark);

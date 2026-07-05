@@ -22,7 +22,23 @@
           <option value="pve">人机对战</option>
         </select>
 
+        <label for="difficultySelect">难度</label>
+        <select id="difficultySelect">
+          <option value="easy">简单</option>
+          <option value="normal" selected>普通</option>
+          <option value="hard">困难</option>
+        </select>
+
+        <button id="undoBtn" type="button">悔棋</button>
+
         <button id="resetBtn" type="button">重新开始</button>
+
+        <label class="sound-toggle" for="soundToggle">
+          <input id="soundToggle" type="checkbox" checked>
+          音效
+        </label>
+
+        <span class="board-size-pill">棋盘 15 x 15</span>
       </div>
 
       <div class="status-wrap">
@@ -40,6 +56,7 @@
       <ul>
         <li>黑棋先手，连成五个同色棋子即可获胜。</li>
         <li>人机模式下你执黑棋，电脑执白棋。</li>
+        <li>悔棋：双人撤回 1 步；人机模式会回退到你落子前。</li>
         <li>这是原创森林风格，适合小朋友游玩。</li>
       </ul>
     </section>
