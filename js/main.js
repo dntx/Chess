@@ -132,6 +132,24 @@ bgmStyleSelect.addEventListener("change", () => {
 });
 bgmVolume.addEventListener("input", () => {
   bgmVolumeValue = Number(bgmVolume.value) / 100;
+  if (bgmMuted) {
+    bgmMuted = false;
+    muteBtn.textContent = "🔊";
+    muteBtn.classList.remove("muted");
+    if (bgmToggle.checked) {
+      ensureAudioContext();
+      startBgm();
+    }
+  }
+});
+muteBtn.addEventListener("click", () => {
+  bgmMuted = !bgmMuted;
+  muteBtn.textContent = bgmMuted ? "🔇" : "🔊";
+  muteBtn.classList.toggle("muted", bgmMuted);
+  if (!bgmMuted && bgmToggle.checked) {
+    ensureAudioContext();
+    startBgm();
+  }
 });
 document.addEventListener("click", () => {
   if (bgmToggle.checked) {
