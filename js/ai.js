@@ -1,5 +1,6 @@
 function chooseAiMove() {
   const config = difficultyConfig[difficulty] || difficultyConfig.normal;
+  const centerIndex = Math.floor(BOARD_SIZE / 2);
 
   const winMove = findInstantWinMove(WHITE);
   if (winMove) {

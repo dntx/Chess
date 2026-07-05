@@ -221,8 +221,10 @@ button:hover {
 }
 
 #boardCanvas {
-  width: min(90vw, 540px);
-  height: min(90vw, 540px);
+  width: 540px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
   background:
     linear-gradient(135deg, #e9c07a 0%, #d5a45f 100%);
   border: 8px solid var(--wood-dark);

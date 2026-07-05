@@ -36,14 +36,8 @@ function drawBoard() {
     ctx.stroke();
   }
 
-  // Star points: four corners plus the center only.
-  const starPoints = [
-    [3, 3],
-    [3, 11],
-    [11, 3],
-    [11, 11],
-    [7, 7]
-  ];
+  // Star points depend on board size: 15x15 uses 5 points, 19x19 uses the 9 standard hoshi.
+  const starPoints = getStarPoints();
   ctx.fillStyle = "#7a471a";
   for (const [r, c] of starPoints) {
     drawStar(r, c);
@@ -57,9 +51,47 @@ function drawBoard() {
     }
   }
 
-  if (lastMove && blinkOn) {
-    drawLastMoveMarker(lastMove.row, lastMove.col);
+  if (blinkOn) {
+    for (const stone of getLastTurnStones()) {
+      drawLastMoveMarker(stone.row, stone.col);
+    }
   }
+}
+
+function getStarPoints() {
+  if (BOARD_SIZE === 19) {
+    const lines = [3, 9, 15];
+    const points = [];
+    for (const r of lines) {
+      for (const c of lines) {
+        points.push([r, c]);
+      }
+    }
+    return points;
+  }
+  return [
+    [3, 3],
+    [3, 11],
+    [11, 3],
+    [11, 11],
+    [7, 7]
+  ];
+}
+
+function getLastTurnStones() {
+  if (moveHistory.length === 0) {
+    return [];
+  }
+  const lastPlayer = moveHistory[moveHistory.length - 1].player;
+  const stones = [];
+  for (let i = moveHistory.length - 1; i >= 0; i -= 1) {
+    if (moveHistory[i].player === lastPlayer) {
+      stones.push(moveHistory[i]);
+    } else {
+      break;
+    }
+  }
+  return stones;
 }
 
 function drawStar(row, col) {
@@ -142,9 +174,10 @@ function getBoardPosition(event) {
 }
 
 function resizeBoard() {
-  const base = Math.min(540, Math.max(300, Math.floor(window.innerWidth * 0.88)));
+  const base = BOARD_SIZE === 19 ? 660 : 540;
   canvas.width = base;
   canvas.height = base;
+  canvas.style.width = `${base}px`;
   cellSize = canvas.width / (BOARD_SIZE + 1);
   drawBoard();
 }

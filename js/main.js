@@ -69,7 +69,6 @@ function undoMove() {
   }
 
   syncTurnState();
-  lastMove = moveHistory.length > 0 ? moveHistory[moveHistory.length - 1] : null;
   playSound("undo");
   drawBoard();
 
@@ -128,15 +127,6 @@ document.addEventListener("click", () => {
 }, { once: true });
 window.addEventListener("resize", resizeBoard);
 
-board = createBoard();
-resizeBoard();
 bgmStyle = bgmStyleSelect.value;
 bgmVolumeValue = Number(bgmVolume.value) / 100;
-gameType = gameTypeSelect.value;
-winLength = gameType === "connect6" ? 6 : 5;
-syncTurnState();
-updateStatus(
-  gameType === "connect6"
-    ? "六子棋：黑棋先手，第一手只下 1 子"
-    : "黑棋先手，开始吧！"
-);
+resetGame();

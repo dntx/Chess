@@ -97,10 +97,12 @@ graph LR
 
 | 维度 | 五子棋 | 六子棋 |
 |------|--------|--------|
+| `BOARD_SIZE` | 15×15 | 19×19 |
+| 星位 | 5 个（四角 + 中心） | 9 个（标准 hoshi） |
 | `winLength` | 5 | 6 |
 | 每回合子数 | 恒为 1 | 首手 1 子，其后每方每回合 2 子 |
 
-回合节奏由 `deriveTurnState(n)` 纯函数推导（`n` = 已落子数），返回 `{ player, stonesLeft }`。悔棋、切换、状态提示都基于它，避免手工维护回合计数出错。
+回合节奏由 `deriveTurnState(n)` 纯函数推导（`n` = 已落子数），返回 `{ player, stonesLeft }`。悔棋、切换、状态提示都基于它，避免手工维护回合计数出错。棋盘大小 `BOARD_SIZE` 与标题在 `resetGame()` 中随棋种同步更新。
 
 - 六子棋回合边界：黑起手在 `n = 0`，之后 2 子回合的黑方新回合在 `n = 3, 7, 11, …`。
 - `isFreshTurnStart(n)` 判断某点是否为“某方一个完整回合的起点”，供悔棋回退到玩家整回合之前。
@@ -168,9 +170,9 @@ sequenceDiagram
 
 ## 10. 渲染
 
-- 单个 `<canvas>` 全量重绘：`drawBoard()` 画网格、5 个星位（四角 + 中心）、所有棋子、以及上一手的闪烁高亮。
+- 单个 `<canvas>` 全量重绘：`drawBoard()` 画网格、星位（15×15 为四角 + 中心共 5 个；19×19 为标准 9 个）、所有棋子，以及最近一回合落子的闪烁高亮（六子棋会同时闪 2 子）。
 - `setInterval` 每 420ms 翻转 `blinkOn` 实现“上一手”闪动。
-- `resizeBoard()` 按窗口宽度自适应画布尺寸并重算 `cellSize`。
+- `resizeBoard()` 按棋种设定画布分辨率（15×15 → 540px，19×19 → 660px），并重算 `cellSize`；CSS 用 `max-width: 100%` + `aspect-ratio` 在小屏上等比缩放，不溢出。
 - 胜负时 `showCelebration()` 叠加彩带 + 发光横幅（CSS 动画）。
 
 ---
