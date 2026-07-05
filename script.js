@@ -10,6 +10,9 @@ const difficultySelect = document.getElementById("difficultySelect");
 const undoBtn = document.getElementById("undoBtn");
 const resetBtn = document.getElementById("resetBtn");
 const soundToggle = document.getElementById("soundToggle");
+const bgmToggle = document.getElementById("bgmToggle");
+const bgmStyleSelect = document.getElementById("bgmStyleSelect");
+const bgmVolume = document.getElementById("bgmVolume");
 const statusText = document.getElementById("statusText");
 const turnDot = document.getElementById("turnDot");
 const celebration = document.getElementById("celebration");
@@ -27,6 +30,62 @@ let lastMove = null;
 let blinkOn = true;
 let aiTimerId = null;
 let audioCtx = null;
+let bgmTimerId = null;
+let bgmStep = 0;
+let bgmStyle = "happy";
+let bgmVolumeValue = 0.36;
+
+const BGM_PATTERNS = {
+  happy: [
+    { freq: 392, ms: 260 },
+    { freq: 440, ms: 260 },
+    { freq: 523.25, ms: 320 },
+    { freq: 440, ms: 260 },
+    { freq: 392, ms: 260 },
+    { freq: 349.23, ms: 300 },
+    { freq: 329.63, ms: 320 },
+    { freq: 0, ms: 120 },
+    { freq: 349.23, ms: 250 },
+    { freq: 392, ms: 250 },
+    { freq: 440, ms: 320 },
+    { freq: 523.25, ms: 320 },
+    { freq: 440, ms: 260 },
+    { freq: 392, ms: 260 },
+    { freq: 349.23, ms: 280 },
+    { freq: 0, ms: 150 }
+  ],
+  calm: [
+    { freq: 293.66, ms: 360 },
+    { freq: 329.63, ms: 360 },
+    { freq: 392, ms: 440 },
+    { freq: 329.63, ms: 340 },
+    { freq: 293.66, ms: 360 },
+    { freq: 261.63, ms: 440 },
+    { freq: 0, ms: 180 },
+    { freq: 261.63, ms: 360 },
+    { freq: 293.66, ms: 360 },
+    { freq: 349.23, ms: 420 },
+    { freq: 392, ms: 440 },
+    { freq: 349.23, ms: 360 },
+    { freq: 293.66, ms: 360 },
+    { freq: 261.63, ms: 420 },
+    { freq: 0, ms: 200 }
+  ],
+  tense: [
+    { freq: 329.63, ms: 180 },
+    { freq: 392, ms: 180 },
+    { freq: 415.3, ms: 180 },
+    { freq: 392, ms: 180 },
+    { freq: 329.63, ms: 180 },
+    { freq: 293.66, ms: 220 },
+    { freq: 329.63, ms: 180 },
+    { freq: 392, ms: 180 },
+    { freq: 466.16, ms: 180 },
+    { freq: 392, ms: 180 },
+    { freq: 329.63, ms: 220 },
+    { freq: 0, ms: 120 }
+  ]
+};
 
 const centerIndex = Math.floor(BOARD_SIZE / 2);
 const difficultyConfig = {
@@ -601,9 +660,6 @@ function undoMove() {
 }
 
 function ensureAudioContext() {
-  if (!soundToggle.checked) {
-    return null;
-  }
   if (!audioCtx) {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) {
@@ -618,6 +674,9 @@ function ensureAudioContext() {
 }
 
 function playSound(kind, player) {
+  if (!soundToggle.checked) {
+    return;
+  }
   const ctxAudio = ensureAudioContext();
   if (!ctxAudio) {
     return;
@@ -659,6 +718,69 @@ function playSound(kind, player) {
   gain.connect(ctxAudio.destination);
   osc.start(now);
   osc.stop(now + duration + 0.02);
+}
+
+function playTone(freq, durationMs, gainValue, type = "sine") {
+  const ctxAudio = ensureAudioContext();
+  if (!ctxAudio || !freq) {
+    return;
+  }
+
+  const now = ctxAudio.currentTime;
+  const osc = ctxAudio.createOscillator();
+  const gain = ctxAudio.createGain();
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(gainValue, now + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+
+  osc.connect(gain);
+  gain.connect(ctxAudio.destination);
+  osc.start(now);
+  osc.stop(now + durationMs / 1000 + 0.03);
+}
+
+function playBgmStep() {
+  if (!bgmToggle.checked) {
+    stopBgm();
+    return;
+  }
+
+  const pattern = BGM_PATTERNS[bgmStyle] || BGM_PATTERNS.happy;
+  const note = pattern[bgmStep % pattern.length];
+  bgmStep += 1;
+
+  playTone(note.freq, note.ms, 0.006 + bgmVolumeValue * 0.024, "triangle");
+
+  bgmTimerId = setTimeout(() => {
+    bgmTimerId = null;
+    playBgmStep();
+  }, note.ms);
+}
+
+function startBgm() {
+  if (!bgmToggle.checked || bgmTimerId) {
+    return;
+  }
+  if (!ensureAudioContext()) {
+    return;
+  }
+  playBgmStep();
+}
+
+function stopBgm() {
+  if (bgmTimerId) {
+    clearTimeout(bgmTimerId);
+    bgmTimerId = null;
+  }
+  bgmStep = 0;
+}
+
+function restartBgm() {
+  stopBgm();
+  startBgm();
 }
 
 function showCelebration(text) {
@@ -723,7 +845,30 @@ soundToggle.addEventListener("change", () => {
     ensureAudioContext();
   }
 });
+bgmToggle.addEventListener("change", () => {
+  if (bgmToggle.checked) {
+    startBgm();
+  } else {
+    stopBgm();
+  }
+});
+bgmStyleSelect.addEventListener("change", () => {
+  bgmStyle = bgmStyleSelect.value;
+  if (bgmToggle.checked) {
+    restartBgm();
+  }
+});
+bgmVolume.addEventListener("input", () => {
+  bgmVolumeValue = Number(bgmVolume.value) / 100;
+});
+document.addEventListener("click", () => {
+  if (bgmToggle.checked) {
+    startBgm();
+  }
+}, { once: true });
 window.addEventListener("resize", resizeBoard);
 
 resizeBoard();
+bgmStyle = bgmStyleSelect.value;
+bgmVolumeValue = Number(bgmVolume.value) / 100;
 updateStatus("黑棋先手，开始吧！");
