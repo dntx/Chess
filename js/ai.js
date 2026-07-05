@@ -3,6 +3,15 @@ function chooseAiMove() {
     return chooseConnect4Move();
   }
 
+  // 三子棋（3x3 连 3）是已解游戏：双方最优必和。困难难度用极小化极大搜索完整
+  // 博弈树，做到永不失误——电脑后手，人类最好的结果只能逼平（想赢只能靠电脑失误）。
+  if (gameType === "tictactoe" && difficulty === "hard") {
+    const optimal = chooseTicTacToeOptimalMove();
+    if (optimal) {
+      return optimal;
+    }
+  }
+
   const config = difficultyConfig[difficulty] || difficultyConfig.normal;
   const centerIndex = Math.floor(boardCols / 2);
 
@@ -158,6 +167,84 @@ function chooseConnect4Move() {
   const poolSize = Math.min(config.topPool, candidates.length);
   const pickIndex = Math.floor(Math.random() * poolSize);
   return candidates[pickIndex];
+}
+
+// 三子棋专用最优走法（困难难度）。3x3 连 3 的博弈树极小，直接极小化极大全搜索：
+// 电脑（WHITE，后手）在任何局面下都至少能逼平，对手一旦失误就会被抓住并取胜。
+function chooseTicTacToeOptimalMove() {
+  const empties = listEmptyCells();
+  if (empties.length === 0) {
+    return null;
+  }
+
+  let bestScore = -Infinity;
+  const bestMoves = [];
+  for (const cell of empties) {
+    board[cell.row][cell.col] = WHITE;
+    const score = hasWin(cell.row, cell.col, WHITE)
+      ? 10
+      : minimaxTicTacToe(BLACK, 1);
+    board[cell.row][cell.col] = EMPTY;
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoves.length = 0;
+      bestMoves.push(cell);
+    } else if (score === bestScore) {
+      bestMoves.push(cell);
+    }
+  }
+
+  // 同分的最优走法随机挑一个，避免每局开局都一模一样。
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+}
+
+// 从“轮到 player 落子”的局面递归求最优分值（站在电脑 WHITE 视角）：
+// 电脑获胜 = 10 - 步数（越快赢越好），电脑落败 = 步数 - 10（越晚输越好），平局 = 0。
+function minimaxTicTacToe(player, depth) {
+  const empties = listEmptyCells();
+  if (empties.length === 0) {
+    return 0;
+  }
+
+  if (player === WHITE) {
+    let best = -Infinity;
+    for (const cell of empties) {
+      board[cell.row][cell.col] = WHITE;
+      const score = hasWin(cell.row, cell.col, WHITE)
+        ? 10 - depth
+        : minimaxTicTacToe(BLACK, depth + 1);
+      board[cell.row][cell.col] = EMPTY;
+      if (score > best) {
+        best = score;
+      }
+    }
+    return best;
+  }
+
+  let best = Infinity;
+  for (const cell of empties) {
+    board[cell.row][cell.col] = BLACK;
+    const score = hasWin(cell.row, cell.col, BLACK)
+      ? depth - 10
+      : minimaxTicTacToe(WHITE, depth + 1);
+    board[cell.row][cell.col] = EMPTY;
+    if (score < best) {
+      best = score;
+    }
+  }
+  return best;
+}
+
+function listEmptyCells() {
+  const empties = [];
+  for (let r = 0; r < boardRows; r += 1) {
+    for (let c = 0; c < boardCols; c += 1) {
+      if (board[r][c] === EMPTY) {
+        empties.push({ row: r, col: c });
+      }
+    }
+  }
+  return empties;
 }
 
 function aiMove() {
