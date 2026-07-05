@@ -144,23 +144,31 @@ sequenceDiagram
 
 ## 8. AI 设计（第一版·简单启发式）
 
-`chooseAiMove()`（五子棋 / 六子棋 / 三子棋）的决策优先级：
+`chooseAiMove()`（五子棋 / 六子棋 / 三子棋）的决策优先级（步骤按难度门控，见下）：
 
-1. **能赢就赢**：`findInstantWinMove(WHITE)` —— 落一子即可连成 `winLength`。
-2. **本回合多子成杀**（`findMultiStoneWinMove(WHITE)`，仅 `stonesLeftThisTurn >= 2` 时，即六子棋）—— 若本回合剩余子数够直接连成获胜（如**连四补 2 子成 6**），先落其中一子（链式的下一子完成），抢先赢；此步在“堵”之前，因为我们这回合先赢、对手根本没机会落子。
-3. **必挡单子致胜**：`findInstantWinMove(BLACK)`。
-4. **堵对手必胜威胁**（`blockBestThreatCell(critical)`，**不分难度**）—— 对手下一回合就能赢的棋型（如六子棋需两子完成的连四）。逐一试落候选空缺格，选“落子后对手剩余威胁最少”的那个（同分再比自己进攻值）。
-5. **抢攻不过度堵**（`findForcedWinMove(WHITE)`）—— 若本步能造出“对手一回合堵不完”的必胜威胁（致胜点数 > `stonesPerTurn`，如把自己的**活三走成活四**、三子棋做**双威胁 fork**），就抢自己的必胜，而**不去堵对手的活三**。此步排在 danger 之前正是为避免“过度堵”。
-6. **堵对手活三**（`blockBestThreatCell(danger)`）—— 上一步抢不到必胜时，才去堵对手的 danger（活三），以免对手白拿一个活四。
-7. **打分选点**：对每个空点综合评估
-   - `evaluatePoint`：己方进攻价值 + 对方威胁价值（按连子数/活口用 `scorePattern` 计分）。
-   - `evaluatePotentialFork`：是否形成双威胁（fork）。
-   - `centerBias`：靠中心加分。
-   - 难度噪声：`difficultyConfig` 控制随机性与候选池大小（简单更随机，困难更稳）。
+1. **能赢就赢**：`findInstantWinMove(WHITE)` —— 落一子即可连成 `winLength`。*（所有难度）*
+2. **本回合多子成杀**（`findMultiStoneWinMove(WHITE)`，仅 `stonesLeftThisTurn >= 2` 时，即六子棋）—— 若本回合剩余子数够直接连成获胜（如**连四补 2 子成 6**），先落其中一子（链式的下一子完成），抢先赢。*（普通/困难必做；简单按 `ownWinChance`≈1/2 概率）*
+3. **必挡单子致胜**：`findInstantWinMove(BLACK)`。*（所有难度，基线）*
+4. **堵对手一步杀**（`blockBestThreatCell(critical)`）—— 对手下一回合就能赢的棋型（如六子棋需两子完成的连四）。逐一试落候选空缺格，选“落子后对手剩余威胁最少”的那个（同分再比自己进攻值）。*（普通/困难必做；简单按 `blockKillChance`≈3/4 概率）*
+5. **抢攻不过度堵**（`findForcedWinMove(WHITE)`）—— 若本步能造出“对手一回合堵不完”的必胜（致胜点数 > `stonesPerTurn`，如把自己的**活三走成活四**、三子棋做**双威胁 fork**），就抢自己的必胜，而**不去堵对手的活三**。此步排在 danger 之前正是为避免“过度堵”。*（仅困难）*
+6. **堵对手活三（两步杀）**（`blockBestThreatCell(danger)`）—— 抢不到必胜时才堵对手活三，以免其白拿一个活四。*（仅困难）*
+7. **打分选点**：`evaluatePoint`（攻/防按连子数与活口用 `scorePattern` 计分）+ `evaluatePotentialFork` + `centerBias` + 难度噪声。*（所有难度）*
 
-六子棋下，AI 每回合的 2 子由 `aiMove()` **逐子链式**完成（每子间有短延时便于观察），每落一子后重新评估——第 2 步就是靠这个链式：先落连四的一个空档变连五，下一子即时成杀。四子棋由 `chooseConnect4Move()` 处理：只在每列的重力落点中选择，先做「能赢/必挡」判断，再用 `findForcedWinMove(WHITE)` 抢“两个必胜落点”的双威胁（对手只能堵一个），最后才按进攻/防守/居中打分（四子棋无 danger 层，危险棋型都是单子致胜，已被「必挡」覆盖，故不会过度堵）。
+### 难度分级（`difficulty` → `difficultyConfig`）
 
-> 各棋种是否会“过度堵”？三子棋、四子棋没有 danger 层（`winLength < 5`），只堵单子致胜，天然不会过度堵，且都用 `findForcedWinMove` 抢双威胁 fork；五子棋靠第 5 步优先抢活四；六子棋的连四本身是 critical（必挡）而非 danger，且第 2 步会优先“本回合直接连成 6”。
+危险棋型“技能”按难度启用，相关开关集中在 `difficultyConfig`：
+
+| 难度 | `ownWinChance`(步 2) | `blockKillChance`(步 4) | `twoStepKill`(步 5、6) | 效果 |
+|------|:---:|:---:|:---:|------|
+| 简单 easy | 0.5 | 0.75 | ✗ | 按概率抢自己成杀 / 堵对手一步杀，其余靠高随机打分（`randomNoise 230`, `topPool 5`）；最弱、可轻松取胜 |
+| 普通 normal | 1 | 1 | ✗ | 必抢自己一步杀、必堵对手一步杀（冲四 / 六子棋连四），但**不专门堵活三**这类两步杀 |
+| 困难 hard | 1 | 1 | ✓ | 全开：抢自己的活四 / 双威胁、堵对手活三，且打分零随机（`topPool 1`），最强 |
+
+> - 自己 / 对手的“一子致胜”始终 100% 处理（基线 `findInstantWinMove`，非技能，不受概率影响）；概率只作用于“多子一步杀”（主要是六子棋连四）。
+> - 简单的**实测有效率**会略高于表中概率：跳过技能时会落到打分，而打分本身也有一定概率堵中 / 成杀（六子棋实测：成杀 ~0.69、堵 ~0.80）。
+
+六子棋下，AI 每回合的 2 子由 `aiMove()` **逐子链式**完成（每子间有短延时便于观察）——第 2 步就是靠这个链式：先落连四的一个空档变连五，下一子即时成杀。四子棋由 `chooseConnect4Move()` 处理：只在每列的重力落点中选择，先做「能赢/必挡」判断，**困难**难度再用 `findForcedWinMove(WHITE)` 抢“两个必胜落点”的双威胁（对手只能堵一个），最后按进攻/防守/居中打分（四子棋无 danger 层，危险棋型都是单子致胜，已被「必挡」覆盖）。
+
 > `findThreats` 供 AI 防守（不受棋盘提示开关影响），也供界面高亮（经 `refreshThreats` 按开关显示）。`findForcedWinMove` 只认“一步造出多于 `stonesPerTurn` 个致胜点”的强制胜，更隐蔽的四三 fork、多步 VCF 仍未处理，属后续增强点。
 
 ---
