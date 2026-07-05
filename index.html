@@ -99,6 +99,18 @@
     </section>
   </main>
 
+  <div id="confirmModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+    <div class="modal-card">
+      <div class="modal-bear" aria-hidden="true">🐻</div>
+      <h2 id="confirmTitle" class="modal-title">等一下～</h2>
+      <p id="confirmMessage" class="modal-message">当前棋局还没结束，切换后会清空当前棋局，确定要切换吗？</p>
+      <div class="modal-actions">
+        <button id="confirmCancelBtn" type="button" class="modal-btn modal-btn-cancel">再想想</button>
+        <button id="confirmOkBtn" type="button" class="modal-btn modal-btn-ok">确定切换</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/config.js"></script>
   <script src="js/state.js"></script>
   <script src="js/rules.js"></script>
