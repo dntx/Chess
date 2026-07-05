@@ -98,7 +98,7 @@ function resetGame(autoStartAi = false) {
   updateStatus(startMessage);
   resizeBoard();
 
-  // 人执白（后手）时电脑执黑先手。默认显式“开始”（点“让小熊先下”或棋盘触发），避免
+  // 人执白（后手）时电脑执黑先手。默认显式“开始”（点“让小熊先下”按钮触发），避免
   // 切模式/选边时电脑突然开局；但用户主动点“重新开始”本就是要开局，直接让电脑先落子。
   const aiGoesFirst = mode === "pve" && currentPlayer === aiColor;
   if (aiGoesFirst && autoStartAi) {
@@ -113,7 +113,7 @@ function resetGame(autoStartAi = false) {
     awaitingAiStart = aiGoesFirst;
     refreshStartOverlay();
     if (awaitingAiStart) {
-      updateStatus("你执白后手，电脑执黑先手～点“让小熊先下”或棋盘开始");
+      updateStatus("你执白后手，电脑执黑先手～点“让小熊先下”开始");
     }
   }
 }

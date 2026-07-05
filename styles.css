@@ -276,7 +276,6 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   background: radial-gradient(circle, #fffef8d9 0%, #ffe9b07a 55%, #ffd86a33 100%);
   z-index: 3;
 }
