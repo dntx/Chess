@@ -48,7 +48,11 @@ function resetGame() {
   difficulty = difficultySelect.value;
   gameType = gameTypeSelect.value;
 
-  if (gameType === "connect4") {
+  if (gameType === "tictactoe") {
+    boardRows = 3;
+    boardCols = 3;
+    winLength = 3;
+  } else if (gameType === "connect4") {
     boardRows = 6;
     boardCols = 7;
     winLength = 4;
@@ -70,7 +74,8 @@ function resetGame() {
 
   const titleMap = {
     connect4: "森林小熊四子棋",
-    connect6: "森林小熊六子棋"
+    connect6: "森林小熊六子棋",
+    tictactoe: "森林小熊三子棋"
   };
   const title = titleMap[gameType] || "森林小熊五子棋";
   gameTitle.textContent = title;
@@ -83,6 +88,8 @@ function resetGame() {
     startMessage = "六子棋：黑棋先手，第一手只下 1 子，之后每回合下 2 子";
   } else if (gameType === "connect4") {
     startMessage = "四子棋：点击一列落子，棋子会落到底部，先连成 4 子获胜";
+  } else if (gameType === "tictactoe") {
+    startMessage = "三子棋：点击空格落子，先连成 3 子获胜";
   }
   updateStatus(startMessage);
   resizeBoard();

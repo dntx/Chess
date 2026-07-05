@@ -1,6 +1,6 @@
 # 架构文档 · 森林小熊五子棋 / 六子棋
 
-一个纯静态、可离线运行的网页棋类游戏。支持五子棋、六子棋与四子棋，双人与人机对战，带音效与背景音乐。
+一个纯静态、可离线运行的网页棋类游戏。支持五子棋、六子棋、四子棋与三子棋，双人与人机对战，带音效与背景音乐。
 
 ---
 
@@ -44,7 +44,7 @@ Chess/
 | `config.js` | 只读常量与配置数据 | `EMPTY/BLACK/WHITE` `BGM_SCORES` `difficultyConfig` |
 | `state.js` | DOM 元素引用 + 所有可变全局状态 | `board` `boardRows`/`boardCols` `currentPlayer` `gameType` `winLength` `stonesLeftThisTurn` `moveHistory` `bgm*` 等 |
 | `rules.js` | 棋局规则与回合推导 | `createBoard` `gravityDropRow` `deriveTurnState` `isFreshTurnStart` `syncTurnState` `resetGame` `placeStone` `hasWin` `finishIfEnded` |
-| `render.js` | 画面与文字反馈 | `drawBoard` `drawConnect4Board` `drawDisc` `drawStar` `drawLastMoveRing` `getBoardPosition` `getConnect4Column` `resizeBoard` `updateStatus` `showCelebration` |
+| `render.js` | 画面与文字反馈 | `drawBoard` `drawConnect4Board` `drawTicTacToeBoard` `drawDisc` `gridGeometry` `getBoardPosition` `getGridCell` `resizeBoard` `updateStatus` `showCelebration` `showDraw` |
 | `ai.js` | 电脑走子（简单启发式） | `chooseAiMove` `chooseConnect4Move` `aiMove` `evaluatePoint` `evaluatePotentialFork` `findInstantWinMove` `scorePattern` |
 | `audio.js` | 声音合成 | `ensureAudioContext` `playSound` `playTone(At)` `playBgmLayers` `playBgmStep` `startBgm` `stopBgm` `restartBgm` |
 | `main.js` | 用户交互与生命周期 | `handleHumanMove` `undoMove` + 事件监听 + 初始化 |
@@ -104,6 +104,8 @@ graph LR
 | 每回合子数 | 恒为 1 | 首手 1 子，其后每回合 2 子 | 恒为 1 |
 
 回合节奏由 `deriveTurnState(n)` 纯函数推导（`n` = 已落子数），返回 `{ player, stonesLeft }`。悔棋、切换、状态提示都基于它，避免手工维护回合计数出错。棋盘尺寸 `boardRows`/`boardCols`、`winLength` 与标题在 `resetGame()` 中随棋种同步更新。四子棋的落点由 `gravityDropRow(col)` 计算（该列最底部空格），胜负仍用通用的 `hasWin`。
+
+此外还有**三子棋**：3×3、连 3、任意空格落子（与四子棋同为格子棋盘，用 `gridGeometry`/`getGridCell` 处理，但无重力），棋盘画法为 `drawTicTacToeBoard`（网格线 + 落格棋子）。
 
 - 六子棋回合边界：黑起手在 `n = 0`，之后 2 子回合的黑方新回合在 `n = 3, 7, 11, …`。
 - `isFreshTurnStart(n)` 判断某点是否为“某方一个完整回合的起点”，供悔棋回退到玩家整回合之前。
