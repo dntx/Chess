@@ -284,6 +284,11 @@ button:hover {
   animation: winner-pop 430ms ease;
 }
 
+.winner-banner.draw {
+  background: linear-gradient(120deg, #8fa3b8, #ced9e6, #8fa3b8);
+  text-shadow: 0 0 6px #00000055;
+}
+
 @keyframes winner-pop {
   from {
     transform: scale(0.7);
