@@ -16,6 +16,10 @@ const celebration = document.getElementById("celebration");
 const confettiLayer = document.getElementById("confettiLayer");
 const winnerBanner = document.getElementById("winnerBanner");
 const gameTitle = document.getElementById("gameTitle");
+const confirmModal = document.getElementById("confirmModal");
+const confirmMessage = document.getElementById("confirmMessage");
+const confirmOkBtn = document.getElementById("confirmOkBtn");
+const confirmCancelBtn = document.getElementById("confirmCancelBtn");
 
 let board = [];
 let currentPlayer = BLACK;
@@ -38,3 +42,4 @@ let bgmStyle = "happy";
 let bgmVolumeValue = 0.36;
 let bgmMuted = false;
 let bgmChain = null;
+let confirmResolver = null;

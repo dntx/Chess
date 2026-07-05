@@ -97,6 +97,34 @@ function undoMove() {
   }
 }
 
+function showConfirmDialog(message) {
+  confirmMessage.textContent = message;
+  confirmModal.classList.remove("hidden");
+  confirmCancelBtn.focus();
+  return new Promise((resolve) => {
+    confirmResolver = resolve;
+  });
+}
+
+function closeConfirmDialog(result) {
+  if (confirmModal.classList.contains("hidden")) {
+    return;
+  }
+  confirmModal.classList.add("hidden");
+  const resolve = confirmResolver;
+  confirmResolver = null;
+  if (resolve) {
+    resolve(result);
+  }
+}
+
+function confirmDiscardIfInProgress() {
+  if (moveHistory.length > 0 && !gameOver) {
+    return showConfirmDialog("当前棋局还没结束，切换后会清空当前棋局，确定要切换吗？");
+  }
+  return Promise.resolve(true);
+}
+
 setInterval(() => {
   blinkOn = !blinkOn;
   drawBoard();
@@ -108,8 +136,39 @@ undoBtn.addEventListener("click", () => {
   undoMove();
 });
 resetBtn.addEventListener("click", resetGame);
-modeSelect.addEventListener("change", resetGame);
-gameTypeSelect.addEventListener("change", resetGame);
+modeSelect.addEventListener("change", () => {
+  confirmDiscardIfInProgress().then((ok) => {
+    if (ok) {
+      resetGame();
+    } else {
+      modeSelect.value = mode;
+    }
+  });
+});
+gameTypeSelect.addEventListener("change", () => {
+  confirmDiscardIfInProgress().then((ok) => {
+    if (ok) {
+      resetGame();
+    } else {
+      gameTypeSelect.value = gameType;
+    }
+  });
+});
+confirmOkBtn.addEventListener("click", () => closeConfirmDialog(true));
+confirmCancelBtn.addEventListener("click", () => closeConfirmDialog(false));
+confirmModal.addEventListener("click", (event) => {
+  if (event.target === confirmModal) {
+    closeConfirmDialog(false);
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (confirmModal.classList.contains("hidden")) {
+    return;
+  }
+  if (event.key === "Escape") {
+    closeConfirmDialog(false);
+  }
+});
 difficultySelect.addEventListener("change", () => {
   difficulty = difficultySelect.value;
   if (mode === "pve") {
