@@ -41,7 +41,7 @@ body {
 }
 
 .app {
-  width: min(900px, 100%);
+  width: min(1120px, 100%);
   background: var(--card);
   border: 4px solid #7aa651;
   border-radius: 20px;
@@ -50,6 +50,13 @@ body {
   position: relative;
   z-index: 1;
   animation: pop-in 500ms ease;
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(320px, 1fr);
+  grid-template-areas:
+    "topbar topbar"
+    "panel board"
+    "tips board";
+  gap: 12px 16px;
 }
 
 @keyframes pop-in {
@@ -65,6 +72,39 @@ body {
 
 .topbar {
   text-align: center;
+  grid-area: topbar;
+  position: relative;
+  overflow: hidden;
+  min-height: 102px;
+}
+
+.bear {
+  position: absolute;
+  width: 88px;
+  height: 88px;
+  filter: drop-shadow(0 8px 8px #3d2b1d44);
+  animation: bear-float 3s ease-in-out infinite;
+}
+
+.bear-left {
+  left: 0;
+  top: 6px;
+}
+
+.bear-right {
+  right: 0;
+  top: 10px;
+  animation-delay: -1.4s;
+}
+
+@keyframes bear-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 .topbar h1 {
@@ -80,6 +120,7 @@ body {
 }
 
 .panel {
+  grid-area: panel;
   display: flex;
   gap: 10px;
   justify-content: space-between;
@@ -171,9 +212,12 @@ button:hover {
 }
 
 .board-wrap {
-  margin-top: 14px;
+  grid-area: board;
+  margin-top: 0;
   display: flex;
   justify-content: center;
+  align-items: center;
+  position: relative;
 }
 
 #boardCanvas {
@@ -189,8 +233,81 @@ button:hover {
   touch-action: manipulation;
 }
 
+.celebration {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #ffffff00 0%, #ffd86a22 65%, #ff8a0030 100%);
+}
+
+.celebration.hidden {
+  display: none;
+}
+
+.confetti-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 16px;
+  border-radius: 3px;
+  animation: confetti-fall 1.35s linear forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-30px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(620px) rotate(520deg);
+    opacity: 0;
+  }
+}
+
+.winner-banner {
+  position: relative;
+  z-index: 2;
+  font-size: clamp(1.3rem, 3vw, 2rem);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 1px;
+  text-shadow:
+    0 0 8px #00000065,
+    0 0 16px #ff8a00,
+    0 0 26px #ffe564;
+  background: linear-gradient(120deg, #ff8a00, #ffd13d, #5ac8fa);
+  border: 3px solid #ffffffcc;
+  border-radius: 999px;
+  padding: 10px 20px;
+  animation: winner-pop 430ms ease;
+}
+
+@keyframes winner-pop {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .tips {
-  margin-top: 14px;
+  grid-area: tips;
+  margin-top: 0;
   background: #f4ffe8;
   border-radius: 12px;
   padding: 10px 12px;
@@ -215,6 +332,12 @@ button:hover {
 @media (max-width: 640px) {
   .app {
     padding: 12px;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "panel"
+      "board"
+      "tips";
   }
 
   .panel {
@@ -223,5 +346,14 @@ button:hover {
 
   .status-wrap {
     border-radius: 10px;
+  }
+
+  .topbar {
+    min-height: 88px;
+  }
+
+  .bear {
+    width: 64px;
+    height: 64px;
   }
 }

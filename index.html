@@ -10,8 +10,10 @@
   <div class="sky"></div>
   <main class="app">
     <header class="topbar">
+      <img class="bear bear-left" src="assets/bear-left.svg" alt="森林小熊装饰">
       <h1>森林小熊五子棋</h1>
       <p class="subtitle">双人对战 / 人机挑战</p>
+      <img class="bear bear-right" src="assets/bear-right.svg" alt="森林小熊装饰">
     </header>
 
     <section class="panel">
@@ -49,6 +51,11 @@
 
     <section class="board-wrap">
       <canvas id="boardCanvas" width="620" height="620" aria-label="五子棋棋盘"></canvas>
+
+      <div id="celebration" class="celebration hidden" aria-hidden="true">
+        <div class="confetti-layer" id="confettiLayer"></div>
+        <div class="winner-banner" id="winnerBanner">胜利！</div>
+      </div>
     </section>
 
     <section class="tips">

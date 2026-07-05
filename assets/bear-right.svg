@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220" role="img" aria-label="卡通小熊头像">
+  <defs>
+    <linearGradient id="face2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c58147"/>
+      <stop offset="100%" stop-color="#9a5f31"/>
+    </linearGradient>
+  </defs>
+  <circle cx="58" cy="56" r="30" fill="#9a5f31"/>
+  <circle cx="162" cy="56" r="30" fill="#9a5f31"/>
+  <circle cx="58" cy="56" r="17" fill="#f8d8ad"/>
+  <circle cx="162" cy="56" r="17" fill="#f8d8ad"/>
+  <circle cx="110" cy="120" r="84" fill="url(#face2)"/>
+  <ellipse cx="110" cy="142" rx="43" ry="35" fill="#f8d8ad"/>
+  <circle cx="82" cy="114" r="9" fill="#332418"/>
+  <circle cx="138" cy="114" r="9" fill="#332418"/>
+  <ellipse cx="110" cy="138" rx="12" ry="9" fill="#332418"/>
+  <path d="M94 158 Q110 168 126 158" stroke="#332418" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <circle cx="75" cy="139" r="6" fill="#f8a5bc" opacity="0.8"/>
+  <circle cx="145" cy="139" r="6" fill="#f8a5bc" opacity="0.8"/>
+</svg>
