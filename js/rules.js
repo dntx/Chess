@@ -39,7 +39,7 @@ function syncTurnState() {
   stonesLeftThisTurn = state.stonesLeft;
 }
 
-function resetGame() {
+function resetGame(autoStartAi = false) {
   if (aiTimerId) {
     clearTimeout(aiTimerId);
     aiTimerId = null;
@@ -47,6 +47,9 @@ function resetGame() {
   mode = modeSelect.value;
   difficulty = difficultySelect.value;
   gameType = gameTypeSelect.value;
+  humanColor = sideSelect.value === "white" ? WHITE : BLACK;
+  aiColor = humanColor === BLACK ? WHITE : BLACK;
+  sideSelect.disabled = mode !== "pve";
 
   if (gameType === "tictactoe") {
     boardRows = 3;
@@ -94,6 +97,25 @@ function resetGame() {
   }
   updateStatus(startMessage);
   resizeBoard();
+
+  // 人执白（后手）时电脑执黑先手。默认显式“开始”（点“让小熊先下”或棋盘触发），避免
+  // 切模式/选边时电脑突然开局；但用户主动点“重新开始”本就是要开局，直接让电脑先落子。
+  const aiGoesFirst = mode === "pve" && currentPlayer === aiColor;
+  if (aiGoesFirst && autoStartAi) {
+    awaitingAiStart = false;
+    refreshStartOverlay();
+    updateStatus("电脑先手，思考中...");
+    aiTimerId = setTimeout(() => {
+      aiTimerId = null;
+      aiMove();
+    }, 300);
+  } else {
+    awaitingAiStart = aiGoesFirst;
+    refreshStartOverlay();
+    if (awaitingAiStart) {
+      updateStatus("你执白后手，电脑执黑先手～点“让小熊先下”或棋盘开始");
+    }
+  }
 }
 
 function placeStone(row, col, player) {

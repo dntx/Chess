@@ -40,6 +40,12 @@
           <option value="hard">困难</option>
         </select>
 
+        <label for="sideSelect">执子</label>
+        <select id="sideSelect">
+          <option value="black" selected>黑棋（先手）</option>
+          <option value="white">白棋（后手）</option>
+        </select>
+
         <label class="sound-toggle threat-toggle" for="threatToggle">
           <input id="threatToggle" type="checkbox" checked>
           危险棋型提示（即将连成）
@@ -88,6 +94,10 @@
         <div class="confetti-layer" id="confettiLayer"></div>
         <div class="winner-banner" id="winnerBanner">胜利！</div>
       </div>
+
+      <div id="startOverlay" class="start-overlay hidden">
+        <button id="startAiBtn" type="button" class="start-btn">🐻 让小熊先下 ▶</button>
+      </div>
     </section>
 
     <section class="tips">
@@ -97,7 +107,7 @@
         <li>四子棋：点击一列，棋子因重力落到底部，先连成 4 子获胜。</li>
         <li>五子棋：黑棋先手，先连成 5 子获胜。</li>
         <li>六子棋：黑棋首手下 1 子，之后每回合各下 2 子，先连成 6 子获胜。</li>
-        <li>人机模式下你执黑棋，电脑执白棋。</li>
+        <li>人机模式下可用“执子”选择执黑（先手）或执白（后手），默认执黑；你执白时电脑执黑，点“让小熊先下”或棋盘后电脑先走。</li>
         <li>悔棋：双人撤回 1 步；人机模式回退到你落子前。</li>
         <li>音效与背景音乐可分别开关，也能调风格和音量。</li>
         <li>危险棋型提示：当某方快要连成获胜时，会给相关棋子加高亮光圈——红圈＝必堵（对方再走一手就能赢，如五子棋冲四、六子棋连四/连五、四子棋差一子），橙圈＝留意（快形成上述威胁，如五子棋活三）。默认开启，可在上方关闭。</li>
