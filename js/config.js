@@ -178,6 +178,7 @@ const difficultyConfig = {
     useNeighborFilter: false,
     // 危险棋型技能只按概率启用，让简单难度明显更弱、可轻松取胜。
     blockKillChance: 0.75, // 堵对手“一步杀”（如六子棋连四）的概率
+    blockDangerChance: 0.85, // 堵对手“活三”（两步杀起点）的概率
     ownWinChance: 0.5,     // 本回合抢自己“多子成杀”（如连四补 2 子成 6）的概率
     twoStepKill: false     // 不处理活三这类两步杀、也不抢活四/双威胁
   },
@@ -189,6 +190,7 @@ const difficultyConfig = {
     topPool: 2,
     useNeighborFilter: true,
     blockKillChance: 1,
+    blockDangerChance: 1,
     ownWinChance: 1,
     twoStepKill: false
   },
@@ -200,6 +202,7 @@ const difficultyConfig = {
     topPool: 1,
     useNeighborFilter: true,
     blockKillChance: 1,
+    blockDangerChance: 1,
     ownWinChance: 1,
     twoStepKill: true
   }

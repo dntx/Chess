@@ -16,9 +16,9 @@ function chooseAiMove() {
   const centerIndex = Math.floor(boardCols / 2);
 
   // 危险棋型“技能”按难度启用（概率见 difficultyConfig）：
-  //   简单：按概率抢/堵（ownWinChance / blockKillChance），其余靠打分 —— 明显更弱。
-  //   普通：必抢自己的一步杀、必堵对手一步杀（连四等），但不处理活三这类两步杀。
-  //   困难：再加抢攻(活四/双威胁)与堵活三(twoStepKill)。
+  //   简单：仍偏随机，但会按 blockDangerChance 主动堵明显活三，避免白送活四。
+  //   普通：必抢自己的一步杀、必堵对手一步杀，也会按配置处理活三防守。
+  //   困难：再加抢攻(活四/双威胁)。
   // 注：自己/对手的“一子致胜”始终处理（下方 findInstantWinMove，属基线而非技能）。
   const winMove = findInstantWinMove(aiColor);
   if (winMove) {
@@ -53,7 +53,12 @@ function chooseAiMove() {
       if (forcedWin) {
         return forcedWin;
       }
-      // 否则堵对手的活三（两步杀），以免对手白拿一个活四。
+    }
+
+    // 活三是显著两步杀信号：防守是否执行由独立概率控制，避免简单难度完全放掉。
+    const dangerChance =
+      typeof config.blockDangerChance === "number" ? config.blockDangerChance : config.blockKillChance;
+    if (dangerChance >= 1 || Math.random() < dangerChance) {
       const dangerBlock = blockBestThreatCell(humanThreats.filter((t) => t.level === "danger"), humanColor);
       if (dangerBlock) {
         return dangerBlock;
